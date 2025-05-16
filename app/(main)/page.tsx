@@ -1,18 +1,14 @@
 // app/(main)/page.tsx
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
-// Предположим, у вас есть или вы можете добавить иконки, например, из heroicons
-// import { MagnifyingGlassIcon, PlusCircleIcon, TrashIcon, InformationCircleIcon, DevicePhoneMobileIcon, GameControllerIcon } from '@heroicons/react/24/outline'; // Пример
-
-// Если у вас нет ../globals.css или он пустой, убедитесь, что базовые стили для body (фон, цвет текста) заданы там или в layout.tsx
-// import '../globals.css'; // Уже есть
+// import { Gamepad2Icon, SearchIcon, PlusCircleIcon, ListChecksIcon, InfoIcon, SmartphoneIcon } from 'lucide-react'; // Пример иконок, если решите использовать
 
 const features = [
   {
     name: 'Обширный Каталог',
     description: 'Просматривайте тысячи игр с подробной информацией и удобным поиском.',
-    // icon: MagnifyingGlassIcon, // Пример иконки
-    iconPlaceholder: '🔍', // Заглушка для иконки
+    // icon: SearchIcon,
+    iconPlaceholder: '🔍',
   },
   {
     name: 'Добавляйте Новинки',
@@ -21,73 +17,102 @@ const features = [
     iconPlaceholder: '➕',
   },
   {
-    name: 'Актуальная Информация',
-    description: 'Удаляйте устаревшие или неверные данные, поддерживая каталог в актуальном состоянии.',
-    // icon: TrashIcon,
-    iconPlaceholder: '🗑️',
+    name: 'Актуальная Информация', // Было "Удаление игр", что не совсем отражает суть для пользователя
+    description: 'Управляйте контентом, поддерживая каталог в актуальном и достоверном состоянии.',
+    // icon: ListChecksIcon, // Иконка проверки или управления
+    iconPlaceholder: '📊', // Или другая подходящая
   },
   {
     name: 'Все Детали Об Игре',
     description: 'Получайте полную информацию: описания, жанры, платформы, скриншоты и многое другое.',
-    // icon: InformationCircleIcon,
+    // icon: InfoIcon,
     iconPlaceholder: 'ℹ️',
   },
   {
     name: 'Адаптивность',
     description: 'Наслаждайтесь комфортным использованием GameHub на любом устройстве, будь то ПК или смартфон.',
-    // icon: DevicePhoneMobileIcon,
+    // icon: SmartphoneIcon,
     iconPlaceholder: '📱💻',
   },
 ];
 
 export default function HomePage() {
+  // ЗАМЕНИТЕ '/your-background-image.jpg' НА ПУТЬ К ВАШЕМУ ФАЙЛУ В ПАПКЕ /public
+  const heroBackgroundImage = '3.png'; 
+
   return (
-    <div className="min-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,80px))] flex flex-col"> {/* Задаем минимальную высоту, чтобы контент занимал экран */}
-      {/* Hero Section */}
-      <section className="flex-grow flex flex-col items-center justify-center text-center px-4 py-16 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white">
-        {/* <GameControllerIcon className="h-24 w-24 text-indigo-400 mb-6" /> Пример иконки для заголовка */}
-        <div className="mb-6 text-6xl text-indigo-400 animate-pulse">🎮</div> {/* Простая иконка-эмодзи как пример */}
-        
-        <h1 className="text-5xl md:text-6xl font-extrabold mb-6">
-          Добро пожаловать в <span className="text-indigo-400">GameHub</span>!
-        </h1>
-        <p className="text-xl md:text-2xl text-slate-300 mb-10 max-w-2xl">
-          Ваш лучший портал для поиска, открытия и добавления информации о любимых играх.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/games">
-            <Button variant="primary" className="px-8 py-4 text-lg w-full sm:w-auto">
-              {/* <MagnifyingGlassIcon className="h-5 w-5 mr-2" /> */}
-              Смотреть каталог
-            </Button>
-          </Link>
-          <Link href="/games/add">
-            <Button variant="secondary" className="px-8 py-4 text-lg w-full sm:w-auto">
-              {/* <PlusCircleIcon className="h-5 w-5 mr-2" /> */}
-              Добавить игру
-            </Button>
-          </Link>
+    <div className="flex flex-col"> {/* Убрал min-h отсюда, т.к. hero секция сама по себе высокая */}
+      {/* Hero Section с вашим фоновым изображением */}
+      <section
+        className="relative flex flex-col items-center justify-center text-center px-4 py-24 sm:py-32 md:py-40 lg:py-48 text-white overflow-hidden min-h-[70vh] sm:min-h-[80vh]" // Добавил min-h для высоты секции
+        style={{
+          backgroundImage: `url(${heroBackgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center', // Явное указание и горизонтального и вертикального центрирования
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {/* Полупрозрачный оверлей для улучшения читаемости текста */}
+        <div className="absolute inset-0 bg-slate-900/70 md:bg-slate-900/75 z-0"></div> {/* opacity-70 / opacity-75 */}
+
+        {/* Контент Hero секции */}
+        <div className="relative z-10 max-w-4xl mx-auto">
+          {/* <Gamepad2Icon className="h-16 w-16 sm:h-20 sm:w-20 text-indigo-400 mb-6 mx-auto animate-pulse" /> */}
+           <div className="mb-6 text-5xl sm:text-6xl text-indigo-400 animate-pulse mx-auto w-fit">🎮</div>
+          
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 leading-tight">
+            Добро пожаловать в <span className="text-indigo-400">GameHub</span>!
+          </h1>
+          <p className="text-lg sm:text-xl md:text-2xl text-slate-200 mb-10 max-w-2xl mx-auto">
+            Ваш лучший портал для поиска, открытия и добавления информации о любимых играх.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+            <Link href="/games">
+              <Button 
+                variant="primary" 
+                size="lg" 
+                className="px-8 py-3 sm:py-4 text-base sm:text-lg w-full sm:w-auto shadow-lg hover:shadow-indigo-500/50 transform hover:scale-105"
+              >
+                {/* <SearchIcon className="h-5 w-5 mr-2" /> */}
+                Смотреть каталог
+              </Button>
+            </Link>
+            <Link href="/games/add">
+              <Button 
+                variant="secondary" // Можно сделать ее более контрастной для фона, например, контурной белой
+                size="lg" 
+                className="px-8 py-3 sm:py-4 text-base sm:text-lg w-full sm:w-auto border-2 border-slate-300 text-slate-100 bg-slate-700/50 hover:bg-slate-600/70 hover:border-white shadow-lg transform hover:scale-105"
+              >
+                {/* <PlusCircleIcon className="h-5 w-5 mr-2" /> */}
+                Добавить игру
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-16 md:py-24 bg-slate-900"> {/* Чуть другой фон для разделения секций */}
+      {/* Предполагаем, что остальная часть приложения остается темной. Если нет - адаптируйте фон. */}
+      <section className="py-16 md:py-24 bg-slate-900"> 
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 md:mb-16 text-indigo-300">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-12 md:mb-16 text-indigo-300">
             Ключевые Возможности GameHub
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {features.map((feature) => (
               <div
                 key={feature.name}
-                className="bg-slate-800 p-6 rounded-xl shadow-xl transform hover:scale-105 transition-transform duration-300"
+                className="bg-slate-800 p-6 rounded-xl shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-indigo-500/40 flex flex-col" // Добавил flex flex-col
               >
                 <div className="flex items-center mb-4">
-                  {/* {feature.icon && <feature.icon className="h-10 w-10 text-indigo-400 mr-4" />} */}
-                  {feature.iconPlaceholder && <span className="text-3xl mr-4">{feature.iconPlaceholder}</span>}
-                  <h3 className="text-2xl font-semibold text-slate-100">{feature.name}</h3>
+                  {feature.iconPlaceholder && (
+                    <span className="text-3xl sm:text-4xl p-3 bg-slate-700 rounded-lg mr-4 text-indigo-400">
+                      {feature.iconPlaceholder}
+                    </span>
+                  )}
+                  <h3 className="text-xl sm:text-2xl font-semibold text-slate-100">{feature.name}</h3>
                 </div>
-                <p className="text-slate-400">{feature.description}</p>
+                <p className="text-slate-400 text-sm sm:text-base flex-grow">{feature.description}</p> {/* flex-grow для выравнивания высоты карточек */}
               </div>
             ))}
           </div>
