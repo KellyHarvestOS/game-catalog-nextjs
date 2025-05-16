@@ -2,8 +2,12 @@
 'use client';
 import React from 'react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger';
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'link'; // Ваши варианты
+  size?: 'sm' | 'default' | 'lg'; // Добавляем размеры
+  isLoading?: boolean;
+  leftIcon?: React.ReactElement;
+  rightIcon?: React.ReactElement;
 }
 
 const Button: React.FC<ButtonProps> = ({ children, className, variant = 'primary', ...props }) => {
