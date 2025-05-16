@@ -1,14 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "es5",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true, // В Next.js >= 13.4 это может быть удалено или изменено
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "bundler", // или "node" для старых версий Next.js
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -18,9 +19,12 @@
         "name": "next"
       }
     ],
+     "baseUrl": ".", // <--- ВАЖНО
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./*"] // <--- ВАЖНО
+ 
     }
+    
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
