@@ -1,26 +1,21 @@
 // contexts/GameContext.tsx
-'use client'; // Если используется в клиентских компонентах Next.js App Router
+'use client';
 
 import React, { createContext, useReducer, useContext, useCallback, ReactNode } from 'react';
-import { Game } from '@/types'; // Убедитесь, что тип Game правильно импортирован
+import { Game } from '@/types';
 
-// ----- СОСТОЯНИЕ (State) -----
 interface GameState {
   games: Game[];
   isLoading: boolean;
   error: string | null;
-  // Можно добавить состояние для отдельной игры, если нужно
-  // currentGame: Game | null; 
 }
 
 const initialState: GameState = {
   games: [],
   isLoading: false,
   error: null,
-  // currentGame: null,
 };
 
-// ----- ДЕЙСТВИЯ (Actions) -----
 type GameAction =
   | { type: 'FETCH_GAMES_REQUEST' }
   | { type: 'FETCH_GAMES_SUCCESS'; payload: Game[] }
@@ -32,21 +27,15 @@ type GameAction =
   | { type: 'UPDATE_GAME_SUCCESS'; payload: Game }
   | { type: 'UPDATE_GAME_FAILURE'; payload: string }
   | { type: 'DELETE_GAME_REQUEST' }
-  | { type: 'DELETE_GAME_SUCCESS'; payload: string } // payload - id удаленной игры
+  | { type: 'DELETE_GAME_SUCCESS'; payload: string }
   | { type: 'DELETE_GAME_FAILURE'; payload: string };
-  // Можно добавить действия для получения одной игры:
-  // | { type: 'FETCH_GAME_BY_ID_REQUEST' }
-  // | { type: 'FETCH_GAME_BY_ID_SUCCESS'; payload: Game }
-  // | { type: 'FETCH_GAME_BY_ID_FAILURE'; payload: string };
 
-// ----- РЕДЬЮСЕР (Reducer) -----
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case 'FETCH_GAMES_REQUEST':
     case 'ADD_GAME_REQUEST':
     case 'UPDATE_GAME_REQUEST':
     case 'DELETE_GAME_REQUEST':
-    // case 'FETCH_GAME_BY_ID_REQUEST':
       return { ...state, isLoading: true, error: null };
 
     case 'FETCH_GAMES_SUCCESS':
@@ -61,7 +50,6 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           game.id === action.payload.id ? action.payload : game
         ),
         error: null,
-        // currentGame: state.currentGame?.id === action.payload.id ? action.payload : state.currentGame,
       };
     case 'DELETE_GAME_SUCCESS':
       return {
@@ -70,14 +58,11 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         games: state.games.filter(game => game.id !== action.payload),
         error: null,
       };
-    // case 'FETCH_GAME_BY_ID_SUCCESS':
-    //   return { ...state, isLoading: false, currentGame: action.payload, error: null };
 
     case 'FETCH_GAMES_FAILURE':
     case 'ADD_GAME_FAILURE':
     case 'UPDATE_GAME_FAILURE':
     case 'DELETE_GAME_FAILURE':
-    // case 'FETCH_GAME_BY_ID_FAILURE':
       return { ...state, isLoading: false, error: action.payload };
 
     default:
@@ -85,27 +70,22 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
   }
 };
 
-// ----- КОНТЕКСТ (Context) -----
-// Тип для значения контекста
 interface GameContextType {
   state: GameState;
-  // dispatch: React.Dispatch<GameAction>; // Можно экспортировать dispatch, если нужен прямой доступ
   fetchGames: () => Promise<void>;
-  addGame: (gameData: Omit<Game, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Game>; // Возвращает созданную игру
-  updateGame: (id: string, gameData: Partial<Omit<Game, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<Game>; // Возвращает обновленную игру
+  addGame: (gameData: Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'screenshots' | 'purchasedByUsers'>) => Promise<Game>; // Адаптируйте Omit под вашу модель
+  updateGame: (id: string, gameData: Partial<Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'screenshots' | 'purchasedByUsers'>>) => Promise<Game>;
   deleteGame: (id: string) => Promise<void>;
-  // fetchGameById: (id: string) => Promise<Game | null>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-// ----- ПРОВАЙДЕР (Provider) -----
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
-
-  const API_BASE_URL = '/api/games'; // Ваш базовый URL для API игр
+  const API_BASE_URL = '/api/games';
 
   const fetchGames = useCallback(async () => {
+   
     dispatch({ type: 'FETCH_GAMES_REQUEST' });
     try {
       const response = await fetch(API_BASE_URL);
@@ -115,9 +95,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       dispatch({ type: 'FETCH_GAMES_FAILURE', payload: (error as Error).message });
     }
-  }, []);
+  }, []); 
 
-  const addGame = async (gameData: Omit<Game, 'id' | 'createdAt' | 'updatedAt'>): Promise<Game> => {
+  const addGame = async (gameData: Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'screenshots' | 'purchasedByUsers'>): Promise<Game> => {
     dispatch({ type: 'ADD_GAME_REQUEST' });
     try {
       const response = await fetch(API_BASE_URL, {
@@ -135,15 +115,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       const message = (error as Error).message;
       dispatch({ type: 'ADD_GAME_FAILURE', payload: message });
-      throw new Error(message); // Перебрасываем ошибку для обработки в компоненте
+      throw new Error(message);
     }
   };
 
-  const updateGame = async (id: string, gameData: Partial<Omit<Game, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Game> => {
+  const updateGame = async (id: string, gameData: Partial<Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'screenshots' | 'purchasedByUsers'>>): Promise<Game> => {
     dispatch({ type: 'UPDATE_GAME_REQUEST' });
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
-        method: 'PUT', // Или PATCH, если ваш API это поддерживает для частичного обновления
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(gameData),
       });
@@ -157,7 +137,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       const message = (error as Error).message;
       dispatch({ type: 'UPDATE_GAME_FAILURE', payload: message });
-      throw new Error(message); // Перебрасываем ошибку
+      throw new Error(message);
     }
   };
 
@@ -174,39 +154,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       dispatch({ type: 'DELETE_GAME_SUCCESS', payload: id });
     } catch (error) {
       dispatch({ type: 'DELETE_GAME_FAILURE', payload: (error as Error).message });
-      throw error; // Перебрасываем ошибку
+      throw error;
     }
   };
 
-  // Пример функции для получения одной игры (если нужно)
-  // const fetchGameById = useCallback(async (id: string): Promise<Game | null> => {
-  //   dispatch({ type: 'FETCH_GAME_BY_ID_REQUEST' });
-  //   try {
-  //     const response = await fetch(`${API_BASE_URL}/${id}`);
-  //     if (!response.ok) {
-  //       if (response.status === 404) { // Обработка случая "не найдено"
-  //         dispatch({ type: 'FETCH_GAME_BY_ID_FAILURE', payload: 'Game not found' });
-  //         return null;
-  //       }
-  //       throw new Error(`HTTP error! status: ${response.status}`);
-  //     }
-  //     const data: Game = await response.json();
-  //     dispatch({ type: 'FETCH_GAME_BY_ID_SUCCESS', payload: data });
-  //     return data;
-  //   } catch (error) {
-  //     dispatch({ type: 'FETCH_GAME_BY_ID_FAILURE', payload: (error as Error).message });
-  //     return null; // или throw error;
-  //   }
-  // }, []);
-
   return (
-    <GameContext.Provider value={{ state, fetchGames, addGame, updateGame, deleteGame /*, fetchGameById */ }}>
+    <GameContext.Provider value={{ state, fetchGames, addGame, updateGame, deleteGame }}>
       {children}
     </GameContext.Provider>
   );
 };
 
-// ----- ХУК (Hook) -----
 export const useGames = (): GameContextType => {
   const context = useContext(GameContext);
   if (context === undefined) {
