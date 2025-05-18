@@ -1,4 +1,3 @@
-// app/api/auth/[...nextauth]/route.ts
 import NextAuth, { AuthOptions } from 'next-auth';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -53,14 +52,19 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as { role?: UserRole }).role;
+        token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        (session.user as { id?: string; role?: UserRole }).id = token.id as string;
-        (session.user as { id?: string; role?: UserRole }).role = token.role as UserRole;
+      if (session.user) {
+        session.user.id = token.id;
+        if (token.role !== undefined) {
+          session.user.role = token.role;
+        } else {
+          console.error("Ошибка: token.role не определен в колбэке session!");
+          // session.user.role = ROLES.USER; // крайняя мера
+        }
       }
       return session;
     },

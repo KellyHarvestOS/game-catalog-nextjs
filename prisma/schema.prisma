@@ -8,6 +8,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- Модели для NextAuth.js ---
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -39,15 +40,17 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
   hashedPassword String?
-  image         String?
-  role          String    @default("USER") // <--- ИЗМЕНЕНО НА String, значение по умолчанию "USER"
-  accounts      Account[]
-  sessions      Session[]
+  image          String?   // Можно использовать для URL аватарки
+  role           String    @default("USER")
+
+  accounts       Account[]       // Связь с Account
+  sessions       Session[]       // Связь с Session
+  purchasedGames PurchasedGame[] // Связь с купленными играми
 }
 
 model VerificationToken {
@@ -56,4 +59,48 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// --- Модели для вашего приложения ---
+model Game {
+  id               String   @id @default(cuid())
+  title            String
+  description      String   @db.Text
+  genre            String?
+  platform         String?
+  developer        String?
+  publisher        String?
+  releaseDate      DateTime?
+  price            Float?
+  coverImageUrl    String?
+  screenshots      Screenshot[]   // Связь с моделью Screenshot
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  purchasedByUsers PurchasedGame[]
+
+  @@index([title])
+  @@index([genre])
+}
+
+model Screenshot {
+  id     String @id @default(cuid())
+  url    String
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+}
+
+model PurchasedGame {
+  id          String   @id @default(cuid())
+  userId      String
+  gameId      String
+  purchasedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([userId])
+  @@index([gameId])
 }
