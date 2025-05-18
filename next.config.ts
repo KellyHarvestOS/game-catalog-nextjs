@@ -1,5 +1,4 @@
 // next.config.js
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -29,11 +28,41 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      { 
+      {
         protocol: 'https',
         hostname: 'encrypted-tbn0.gstatic.com',
         port: '',
-        pathname: '/images/**', 
+        pathname: '/images/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.pinimg.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ru.pinterest.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'shared.fastly.steamstatic.com',
+        port: '',
+        pathname: '/store_item_assets/steam/apps/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'hot.game',
+        port: '',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.itch.zone',
+        port: '',
+        pathname: '/**', 
       },
     ],
   },
