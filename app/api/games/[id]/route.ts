@@ -1,109 +1,101 @@
-// app/api/games/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { Game } from '@/types';
-
-// Получаем доступ к тому же in-memory store (это упрощение)
-// В реальном приложении здесь был бы импорт 'games' или доступ к БД
-// Для простоты примера, представим что 'games' доступен (но это не так между файлами в serverless функциях)
-// Правильный способ - использовать БД или какой-то общий модуль для хранения состояния.
-// Но для учебных целей, мы будем модифицировать его здесь, понимая, что это не лучший подход.
-// Для этого примера, чтобы он заработал без БД, нужно будет переопределить games здесь или передавать
-// его как-то. Поскольку это serverless, каждый запрос к API - это отдельный инстанс.
-// Чтобы это работало как ожидается с in-memory, нужно чтобы `games` было в отдельном модуле
-// и импортировалось в оба файла `route.ts`.
-
-// Давайте сделаем так: создадим файл `data/db.ts`
-// data/db.ts
-// export let games_db: Game[] = [ ... начальные данные ... ];
-
-// И импортируем его. Сначала создадим `data/db.ts`
-/*
-Файл `data/db.ts`:
-import { Game } from '@/types';
-
-export let games_db: Game[] = [
-  {
-    id: '1',
-    title: 'Cyberpunk 2077',
-    genre: 'RPG',
-    platform: 'PC, PS5, Xbox Series X/S',
-    releaseDate: '2020-12-10',
-    developer: 'CD Projekt Red',
-    description: 'An open-world, action-adventure story set in Night City.',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/en/9/9f/Cyberpunk_2077_box_art.jpg',
-    price: 59.99,
-  },
-  {
-    id: '2',
-    title: 'The Witcher 3: Wild Hunt',
-    genre: 'RPG',
-    platform: 'PC, PS4, Xbox One, Switch',
-    releaseDate: '2015-05-19',
-    developer: 'CD Projekt Red',
-    description: 'A story-driven, next-generation open world role-playing game.',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Witcher_3_cover_art.jpg',
-    price: 39.99,
-  },
-  {
-    id: '3',
-    title: 'Elden Ring',
-    genre: 'Action RPG',
-    platform: 'PC, PS5, Xbox Series X/S, PS4, Xbox One',
-    releaseDate: '2022-02-25',
-    developer: 'FromSoftware',
-    description: 'THE NEW FANTASY ACTION RPG. Rise, Tarnished, and be guided by grace to brandish the power of the Elden Ring and become an Elden Lord in the Lands Between.',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/en/b/b9/Elden_Ring_Box_Art.jpg',
-    price: 69.99,
-  }
-];
-*/
-// Убедитесь, что создали этот файл.
-// Теперь вернемся к `app/api/games/[id]/route.ts`
-
-// Этот подход с in-memory DB в виде переменной в модуле будет работать в режиме разработки (npm run dev)
-// из-за особенностей кэширования модулей Node.js.
-// В продакшене (serverless environment) каждый вызов API может быть отдельной функцией,
-// и состояние не будет сохраняться между вызовами таким образом. Нужна внешняя БД.
-import { games_db as games } from '@/data/db'; // Предполагаем, что db.ts создан в /data
+import prisma from '@/data/prisma';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const game = games.find(g => g.id === params.id);
-  if (game) {
+  try {
+    const id = params.id;
+    const game = await prisma.game.findUnique({
+      where: { id: id },
+    });
+
+    if (!game) {
+      return NextResponse.json({ message: 'Игра не найдена' }, { status: 404 });
+    }
     return NextResponse.json(game);
+  } catch (error) {
+    console.error("Ошибка при получении игры:", error);
+    return NextResponse.json({ message: 'Ошибка сервера при получении игры' }, { status: 500 });
   }
-  return NextResponse.json({ error: 'Game not found' }, { status: 404 });
 }
 
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const gameIndex = games.findIndex(g => g.id === params.id);
-  if (gameIndex !== -1) {
-    const deletedGame = games.splice(gameIndex, 1);
-    // Важно: Это изменит массив `games_db` в `data/db.ts` для последующих запросов в dev режиме.
-    return NextResponse.json(deletedGame[0]);
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user || (session.user as { role?: string })?.role !== 'ADMIN') {
+    return NextResponse.json(
+      { message: 'Доступ запрещен: требуется авторизация администратора' },
+      { status: 403 }
+    );
   }
-  return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+
+  try {
+    const id = params.id;
+    const existingGame = await prisma.game.findUnique({
+      where: { id },
+    });
+
+    if (!existingGame) {
+      return NextResponse.json({ message: 'Игра для удаления не найдена' }, { status: 404 });
+    }
+
+    await prisma.game.delete({
+      where: { id: id },
+    });
+
+    return NextResponse.json({ message: 'Игра успешно удалена' }, { status: 200 });
+  } catch (error) {
+    console.error("Ошибка при удалении игры:", error);
+    return NextResponse.json({ message: 'Ошибка сервера при удалении игры' }, { status: 500 });
+  }
 }
 
-// PUT для обновления (опционально)
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const gameIndex = games.findIndex(g => g.id === params.id);
-  if (gameIndex !== -1) {
-    try {
-      const updatedData = await request.json() as Partial<Game>;
-      games[gameIndex] = { ...games[gameIndex], ...updatedData, id: params.id }; // Ensure ID is not changed
-      return NextResponse.json(games[gameIndex]);
-    } catch (error) {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-    }
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user || (session.user as { role?: string })?.role !== 'ADMIN') {
+    return NextResponse.json(
+      { message: 'Доступ запрещен: требуется авторизация администратора' },
+      { status: 403 }
+    );
   }
-  return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+
+  try {
+    const id = params.id;
+    const body = await request.json();
+    const { title, description, genre, platform, price } = body;
+
+    const existingGame = await prisma.game.findUnique({
+      where: { id },
+    });
+
+    if (!existingGame) {
+      return NextResponse.json({ message: 'Игра для обновления не найдена' }, { status: 404 });
+    }
+
+    const updatedGame = await prisma.game.update({
+      where: { id: id },
+      data: {
+        title,
+        description,
+        genre,
+        platform,
+        price,
+      },
+    });
+    return NextResponse.json(updatedGame, { status: 200 });
+  } catch (error) {
+    console.error("Ошибка при обновлении игры:", error);
+    return NextResponse.json({ message: 'Ошибка сервера при обновлении игры' }, { status: 500 });
+  }
 }
