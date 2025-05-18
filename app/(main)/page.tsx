@@ -37,12 +37,11 @@ const features = [
 ];
 
 export default function HomePage() {
-  // ЗАМЕНИТЕ '/your-background-image.jpg' НА ПУТЬ К ВАШЕМУ ФАЙЛУ В ПАПКЕ /public
+ 
   const heroBackgroundImage = '3.png'; 
 
   return (
-    <div className="flex flex-col"> {/* Убрал min-h отсюда, т.к. hero секция сама по себе высокая */}
-      {/* Hero Section с вашим фоновым изображением */}
+    <div className="flex flex-col"> 
       <section
         className="relative flex flex-col items-center justify-center text-center px-4 py-24 sm:py-32 md:py-40 lg:py-48 text-white overflow-hidden min-h-[70vh] sm:min-h-[80vh]" // Добавил min-h для высоты секции
         style={{
@@ -52,8 +51,8 @@ export default function HomePage() {
           backgroundRepeat: 'no-repeat',
         }}
       >
-        {/* Полупрозрачный оверлей для улучшения читаемости текста */}
-        <div className="absolute inset-0 bg-slate-900/70 md:bg-slate-900/75 z-0"></div> {/* opacity-70 / opacity-75 */}
+       
+        <div className="absolute inset-0 bg-slate-900/70 md:bg-slate-900/75 z-0"></div> 
 
         {/* Контент Hero секции */}
         <div className="relative z-10 max-w-4xl mx-auto">

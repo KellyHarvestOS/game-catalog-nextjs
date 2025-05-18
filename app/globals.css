@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Дополнительные глобальные стили, если нужны */
+body {
+  @apply bg-gray-900 text-gray-100;
+}

@@ -1,29 +1,30 @@
-// components/ui/Navbar.tsx (или components/Navbar.tsx)
+// components/ui/Navbar.tsx
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-// Закомментируйте или удалите, если не используете реальные иконки
-// import { Gamepad2, LayoutGrid, PlusCircle, Info, Menu, X, type LucideIcon } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+import Button from './Button';
 
-// Интерфейс для элемента навигации
 interface NavItemType {
   href: string;
   label: string;
-  Icon?: React.ElementType; // Icon теперь опциональный
+  Icon?: React.ElementType;
+  adminOnly?: boolean;
+  loggedInOnly?: boolean;
+  loggedOutOnly?: boolean;
 }
 
-// Улучшенный NavLink с более выраженным активным состоянием
 const NavLink = ({
   href,
   children,
   Icon,
-  onClick
+  onClick,
 }: {
   href: string;
   children: React.ReactNode;
-  Icon?: React.ElementType; // Icon опциональный здесь тоже
+  Icon?: React.ElementType;
   onClick?: () => void;
 }) => {
   const pathname = usePathname();
@@ -50,6 +51,11 @@ const NavLink = ({
 };
 
 const Navbar = () => {
+  const { data: session, status } = useSession();
+  console.log('Navbar --- Session Data:', JSON.stringify(session, null, 2), '--- Status:', status);
+  const isLoadingSession = status === 'loading';
+  const userRole = (session?.user as { role?: string })?.role;
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -64,50 +70,78 @@ const Navbar = () => {
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  // Теперь явно указываем тип для массива navItems
-  const navItems: NavItemType[] = [
-    { href: '/', label: 'Главная' /*, Icon: LayoutGrid */ }, // Icon может быть undefined
-    { href: '/games', label: 'Каталог Игр' /*, Icon: LayoutGrid */ },
-    { href: '/games/add', label: 'Добавить Игру' /*, Icon: PlusCircle */ },
-    { href: '/about', label: 'О Приложении' /*, Icon: Info */ },
+  const allNavItems: NavItemType[] = [
+    { href: '/', label: 'Главная' },
+    { href: '/games', label: 'Каталог Игр' },
+    { href: '/about', label: 'О Приложении' },
+    { href: '/games/add', label: 'Добавить Игру', adminOnly: true },
+    { href: '/profile', label: 'Профиль', loggedInOnly: true },
   ];
-  // Если вы хотите использовать реальные иконки, раскомментируйте их:
-  /*
-  const navItems: NavItemType[] = [
-    { href: '/', label: 'Главная', Icon: LayoutGrid },
-    { href: '/games', label: 'Каталог Игр', Icon: LayoutGrid },
-    { href: '/games/add', label: 'Добавить Игру', Icon: PlusCircle },
-    { href: '/about', label: 'О Приложении', Icon: Info },
-  ];
-  */
 
+  const navItemsToDisplay = allNavItems.filter(item => {
+    if (isLoadingSession) return false;
+    if (item.adminOnly && userRole !== 'ADMIN') return false;
+    if (item.loggedInOnly && !session) return false;
+    if (item.loggedOutOnly && session) return false;
+    return true;
+  });
 
   return (
     <header className={`sticky top-0 z-50 transition-shadow duration-300 ${isScrolled ? 'shadow-xl bg-slate-900/80 backdrop-blur-lg' : 'bg-slate-900'}`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-           <Link href="/" className="flex items-center" onClick={closeMobileMenu}>
-          <Image
-              src="/2.png"    
-              alt="GameHub Logo"    
-              width={100} 
-              height={100} 
-              
-              priority           
-            /> </Link>
-         
+          <Link href="/" className="flex items-center" onClick={closeMobileMenu}>
+            <Image
+              src="/2.png"
+              alt="GameHub Logo"
+              width={100}
+              height={100}
+              priority
+            />
+          </Link>
 
-          {/* Навигация для десктопа */}
-          <nav className="hidden md:flex items-center space-x-2 lg:space-x-4">
-            {navItems.map(item => (
-              // TypeScript теперь должен знать, что item.Icon может существовать (или быть undefined)
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+            {navItemsToDisplay.map(item => (
               <NavLink key={item.href} href={item.href} Icon={item.Icon}>
                 {item.label}
               </NavLink>
             ))}
+            {!isLoadingSession && (
+              <>
+                {session?.user ? (
+                  <Button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    variant="danger"
+                    size="sm"
+                    className="text-sm ml-2"
+                  >
+                    Выйти
+                  </Button>
+                ) : (
+                  <>
+                    <NavLink href="/login">Войти</NavLink>
+                    <Link href="/register" className="ml-2">
+                      <Button variant="primary" size="sm" className="text-sm">
+                        Регистрация
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </nav>
 
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center">
+            {!isLoadingSession && session?.user && (
+                 <Button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    variant="danger"
+                    size="sm"
+                    className="text-sm mr-2 py-1 px-2"
+                  >
+                    Выйти
+                  </Button>
+            )}
             <button
               onClick={toggleMobileMenu}
               type="button"
@@ -117,30 +151,39 @@ const Navbar = () => {
             >
               <span className="sr-only">Открыть главное меню</span>
               {isMobileMenuOpen ? (
-                <span className="text-2xl">✕</span> // <X className="block h-7 w-7" />
+                <span className="text-2xl">✕</span>
               ) : (
-                <span className="text-2xl">☰</span> // <Menu className="block h-7 w-7" />
+                <span className="text-2xl">☰</span>
               )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Мобильное меню */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-slate-800 shadow-lg z-40" id="mobile-menu">
           <nav className="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col">
-            {navItems.map(item => (
-              // TypeScript теперь должен знать, что item.Icon может существовать (или быть undefined)
+            {navItemsToDisplay.map(item => (
               <NavLink key={item.href} href={item.href} Icon={item.Icon} onClick={closeMobileMenu}>
                 {item.label}
               </NavLink>
             ))}
+            {!isLoadingSession && !session?.user && (
+              <>
+                <NavLink href="/login" onClick={closeMobileMenu}>Войти</NavLink>
+                <div className="px-1 py-1">
+                  <Link href="/register" onClick={closeMobileMenu} className="block">
+                    <Button variant="primary" size="sm" className="text-sm w-full">
+                      Регистрация
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            )}
           </nav>
         </div>
       )}
     </header>
   );
 };
-
 export default Navbar;
