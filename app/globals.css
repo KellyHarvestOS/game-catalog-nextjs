@@ -1,8 +1,33 @@
+/* globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Дополнительные глобальные стили, если нужны */
 body {
-  @apply bg-gray-900 text-gray-100;
+  @apply bg-slate-900 text-slate-100; /* Изменил на slate для консистентности с другими компонентами */
+}
+
+/* Добавляем слой для кастомных утилит, чтобы можно было использовать theme() */
+@layer utilities {
+  /* Анимация "шиммера" (переливающийся градиент) */
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    /* 
+      Подберите цвета: 
+      - первый и третий цвет - основной цвет заглушки
+      - второй цвет - более светлый "блик"
+    */
+    background: linear-gradient(to right, theme('colors.slate.700') 4%, theme('colors.slate.600') 25%, theme('colors.slate.700') 36%);
+    background-size: 1000px 100%; /* Ширина градиента должна быть больше ширины элемента */
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0; /* Начальная позиция градиента за левым краем */
+    }
+    100% {
+      background-position: 1000px 0;  /* Конечная позиция градиента за правым краем */
+    }
+  }
 }
