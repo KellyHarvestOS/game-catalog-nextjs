@@ -1,4 +1,3 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -63,6 +62,12 @@ const nextConfig = {
         hostname: 'img.itch.zone',
         port: '',
         pathname: '/**', 
+      },
+      {
+        protocol: 'https',
+        hostname: 'grandgames.net', 
+        port: '',
+        pathname: '/img/embedgames/**', 
       },
     ],
   },
