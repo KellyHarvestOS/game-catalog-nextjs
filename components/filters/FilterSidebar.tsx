@@ -54,7 +54,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     // `h-fit sticky top-24` чтобы сайдбар "прилипал" при скролле, но не выходил за пределы контента
     <aside className="w-full md:w-72 lg:w-80 p-4 md:p-6 bg-slate-800 rounded-lg shadow-lg space-y-6 h-fit sticky top-24">
       <h2 className="text-2xl font-semibold text-indigo-400 border-b border-slate-700 pb-3">
-        Фильтры
+        
       </h2>
 
       {/* Раздел для Жанров */}
