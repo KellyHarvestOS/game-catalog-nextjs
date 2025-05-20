@@ -2,145 +2,173 @@
 'use client';
 import React, { useState, FormEvent, useEffect } from 'react';
 import { Game } from '@/types';
-import Input from './ui/Input'; // Предполагаем, что этот компонент уже хорошо стилизован
+import Input from './ui/Input';
 import Button from './ui/Button';
 import { useRouter } from 'next/navigation';
 import { useGames } from '@/contexts/GameContext';
-// import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/solid'; // Для сообщений
 
-interface GameFormProps {
-  initialData?: Game;
-  onSubmitSuccess?: (newGameId?: string) => void; // Может принимать ID новой игры для редиректа на нее
+export interface GameFormProps {
+  isEditing?: boolean;
+  initialData?: Game | null;
+  gameId?: string;
+  onSubmitSuccess?: (gameId?: string) => void;
 }
 
-const GameForm: React.FC<GameFormProps> = ({ initialData, onSubmitSuccess }) => {
+type FormDataType = {
+  title: string;
+  description: string;
+  genre: string;
+  platform: string;
+  developer: string;
+  publisher: string;
+  releaseDate: string;
+  price: string;
+  imageUrl: string;
+  screenshotUrlsText?: string;
+};
+
+const GameForm: React.FC<GameFormProps> = ({
+  isEditing: propsIsEditing,
+  initialData = null,
+  gameId: propsGameId,
+  onSubmitSuccess,
+}) => {
   const router = useRouter();
-  const { addGame, updateGame, state } = useGames(); // Добавляем updateGame для редактирования
-  const [formData, setFormData] = useState<Omit<Game, 'id' | 'createdAt' | 'updatedAt'>>({ // Убираем поля, которые не должны редактироваться напрямую
+  const { addGame, updateGame, state } = useGames();
+
+  const [formData, setFormData] = useState<FormDataType>({
     title: '',
+    description: '',
     genre: '',
     platform: '',
-    releaseDate: '',
     developer: '',
-    description: '',
+    publisher: '',
+    releaseDate: '',
+    price: '',
     imageUrl: '',
-    price: 0,
-    // Добавьте другие поля из вашего типа Game, если они есть
+    screenshotUrlsText: '', // Initialized as string, so formData.screenshotUrlsText is always string
   });
 
-  const [formErrors, setFormErrors] = useState<Partial<Record<keyof typeof formData, string>>>({});
-  const [serverError, setServerError] = useState<string | null>(null); // Ошибка от сервера/контекста
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormDataType, string>>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isFormLoading, setIsFormLoading] = useState(false);
 
-  const isEditMode = !!initialData;
+  const isEditMode = propsIsEditing ?? !!initialData;
+  const gameIdForSubmit = propsGameId ?? initialData?.id;
 
   useEffect(() => {
-    if (initialData) {
+    if (isEditMode && initialData) {
       setFormData({
         title: initialData.title || '',
+        description: initialData.description || '',
         genre: initialData.genre || '',
         platform: initialData.platform || '',
-        // Форматируем дату для input type="date"
-        releaseDate: initialData.releaseDate ? new Date(initialData.releaseDate).toISOString().split('T')[0] : '',
         developer: initialData.developer || '',
-        description: initialData.description || '',
+        publisher: initialData.publisher || '',
+        releaseDate: initialData.releaseDate ? new Date(initialData.releaseDate).toISOString().split('T')[0] : '',
+        price: initialData.price !== undefined && initialData.price !== null ? String(initialData.price) : '',
         imageUrl: initialData.imageUrl || '',
-        price: initialData.price || 0,
+        screenshotUrlsText: initialData.screenshots?.join(', ') || '',
       });
     }
-  }, [initialData]);
+  }, [isEditMode, initialData]);
 
-  const validateField = (name: keyof typeof formData, value: any): string | undefined => {
+  const validateField = (name: keyof FormDataType, value: string): string | undefined => {
+    const strValue = String(value).trim(); // value is already expected to be string here
     switch (name) {
-      case 'title':
-        return value.trim() ? undefined : 'Название обязательно';
-      case 'genre':
-        return value.trim() ? undefined : 'Жанр обязателен';
-      case 'platform':
-        return value.trim() ? undefined : 'Платформа обязательна';
-      case 'developer':
-        return value.trim() ? undefined : 'Разработчик обязателен';
-      case 'releaseDate':
-        return value ? undefined : 'Дата выхода обязательна';
-      case 'description':
-        return value.trim().length > 10 ? undefined : 'Описание должно быть не менее 10 символов';
+      case 'title': return strValue ? undefined : 'Название обязательно';
+      case 'description': return strValue.length >= 10 ? undefined : 'Описание должно быть не менее 10 символов';
       case 'price':
-        return value > 0 ? undefined : 'Цена должна быть больше нуля';
+        if (strValue === '') return 'Цена обязательна';
+        const numPrice = Number(value); // `value` is string here from FormDataType or input
+        return !isNaN(numPrice) && numPrice >= 0 ? undefined : 'Цена должна быть числом (0 или больше)';
       case 'imageUrl':
-        if (value.trim() === '') return undefined; // Не обязательно
-        try {
-          new URL(value);
-          return undefined;
-        } catch (_) {
-          return 'Некорректный URL изображения';
+        if (!strValue) return undefined;
+        try { new URL(strValue); return undefined; } catch (_) { return 'Некорректный URL изображения обложки'; }
+      case 'screenshotUrlsText':
+        if (!strValue) return undefined; // strValue is from (formData[key] ?? '').trim() or e.target.value.trim()
+        const urls = strValue.split(',').map(url => url.trim()).filter(url => url);
+        for (const url of urls) {
+          try { new URL(url); } catch (_) { return `Некорректный URL скриншота: ${url}`; }
         }
-      default:
         return undefined;
+      default: return undefined;
     }
   };
-
+  
   const validateForm = (): boolean => {
-    const errors: Partial<Record<keyof typeof formData, string>> = {};
+    const errors: Partial<Record<keyof FormDataType, string>> = {};
     let isValid = true;
-    (Object.keys(formData) as Array<keyof typeof formData>).forEach(key => {
-      const error = validateField(key, formData[key]);
-      if (error) {
-        errors[key] = error;
-        isValid = false;
-      }
+    (Object.keys(formData) as Array<keyof FormDataType>).forEach(key => {
+      // FIX: Ensure the value passed to validateField is a string.
+      // formData[key] can be `string | undefined` according to FormDataType for optional fields.
+      // Even though screenshotUrlsText is initialized to '', TS type system considers it string | undefined.
+      const valueToValidate = formData[key as keyof FormDataType] ?? '';
+      const error = validateField(key, valueToValidate);
+      if (error) { errors[key] = error; isValid = false; }
     });
     setFormErrors(errors);
     return isValid;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    const parsedValue = name === 'price' ? parseFloat(value) || 0 : value;
-    
-    setFormData(prev => ({ ...prev, [name]: parsedValue }));
-    // Валидация при изменении
-    if (formErrors[name as keyof typeof formData]) {
-        const error = validateField(name as keyof typeof formData, parsedValue);
-        setFormErrors(prev => ({...prev, [name as keyof typeof formData]: error }));
-    }
+    const { name, value } = e.target; // value is string
+    const key = name as keyof FormDataType;
+    setFormData(prev => ({ ...prev, [key]: value }));
+    // When validating on change, `value` is directly from e.target.value, which is string.
+    if (formErrors[key]) { const error = validateField(key, value); setFormErrors(prev => ({...prev, [key]: error }));}
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    const parsedValue = name === 'price' ? parseFloat(value) || 0 : value;
-    const error = validateField(name as keyof typeof formData, parsedValue);
-    setFormErrors(prev => ({ ...prev, [name as keyof typeof formData]: error }));
+    const { name, value } = e.target; // value is string
+    const key = name as keyof FormDataType;
+    // When validating on blur, `value` is directly from e.target.value, which is string.
+    const error = validateField(key, value);
+    setFormErrors(prev => ({ ...prev, [key]: error }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setServerError(null);
-    setSuccessMessage(null);
-
-    if (!validateForm()) {
-      return;
+    setServerError(null); setSuccessMessage(null); setIsFormLoading(true);
+    if (!validateForm()) { setIsFormLoading(false); return; }
+    
+    const priceValue = formData.price.trim();
+    const priceAsNumber: number | null = priceValue === '' ? null : Number(priceValue);
+    if (priceValue !== '' && (priceAsNumber === null || isNaN(priceAsNumber))) {
+        setServerError('Цена должна быть корректным числом.'); setIsFormLoading(false); return;
     }
+
+    const screenshotUrls = formData.screenshotUrlsText?.split(',').map(url => url.trim()).filter(url => url) || [];
+
+    const payloadToSend: Partial<Omit<Game, 'id' | 'isStatic' | 'createdAt' | 'updatedAt' | 'coverImageUrl' >> & { screenshots?: string[] } = {
+      title: formData.title,
+      description: formData.description,
+      genre: formData.genre.trim() === '' ? undefined : formData.genre,
+      platform: formData.platform.trim() === '' ? undefined : formData.platform,
+      developer: formData.developer.trim() === '' ? undefined : formData.developer,
+      publisher: formData.publisher.trim() === '' ? undefined : formData.publisher,
+      releaseDate: formData.releaseDate.trim() === '' ? null : formData.releaseDate,
+      price: priceAsNumber,
+      imageUrl: formData.imageUrl.trim() === '' ? null : formData.imageUrl,
+      screenshots: screenshotUrls.length > 0 ? screenshotUrls : undefined,
+    };
     
     try {
       let resultGame;
-      if (isEditMode && initialData) {
-        resultGame = await updateGame(initialData.id, formData); // updateGame должен возвращать обновленную игру или ее ID
+      const apiPayload = payloadToSend as Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'screenshots' | 'purchasedByUsers' | 'isStatic' | 'coverImageUrl'> & { screenshots?: string[] };
+
+      if (isEditMode && gameIdForSubmit) {
+        resultGame = await updateGame(gameIdForSubmit, apiPayload);
         setSuccessMessage('Игра успешно обновлена!');
       } else {
-        resultGame = await addGame(formData); // addGame должен возвращать созданную игру или ее ID
+        resultGame = await addGame(apiPayload);
         setSuccessMessage('Игра успешно добавлена!');
-        setFormData({ title: '', genre: '', platform: '', releaseDate: '', developer: '', description: '', imageUrl: '', price: 0 });
+        setFormData({ title: '', description: '', genre: '', platform: '', developer: '', publisher: '', releaseDate: '', price: '', imageUrl: '', screenshotUrlsText: ''});
         setFormErrors({});
       }
-      
-      if (onSubmitSuccess) {
-        onSubmitSuccess(resultGame?.id); // Передаем ID, если он есть
-      } else {
-        router.push(resultGame?.id ? `/games/${resultGame.id}` : '/games'); // Редирект на страницу игры или каталог
-      }
-    } catch (err) {
-      setServerError((err as Error).message || `Не удалось ${isEditMode ? 'обновить' : 'добавить'} игру.`);
-    }
+      if (onSubmitSuccess) { onSubmitSuccess(resultGame?.id); } else { router.push(resultGame?.id ? `/games/${resultGame.id}` : '/games');}
+    } catch (err) { setServerError((err as Error).message || `Ошибка.`); } finally { setIsFormLoading(false); }
   };
 
   return (
@@ -148,68 +176,32 @@ const GameForm: React.FC<GameFormProps> = ({ initialData, onSubmitSuccess }) => 
       <h2 className="text-3xl font-bold mb-8 text-center text-indigo-400">
         {isEditMode ? 'Редактирование Игры' : 'Добавить Новую Игру'}
       </h2>
-      
-      {serverError && (
-        <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-md mb-6 flex items-center">
-          {/* <ExclamationCircleIcon className="h-5 w-5 mr-2 text-red-400" /> */}
-          <span>{serverError}</span>
-        </div>
-      )}
-      {state.error && !serverError && ( // Показываем ошибку из контекста, если нет локальной
-        <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-md mb-6 flex items-center">
-          {/* <ExclamationCircleIcon className="h-5 w-5 mr-2 text-red-400" /> */}
-          <span>Ошибка контекста: {state.error}</span>
-        </div>
-      )}
-      {successMessage && (
-        <div className="bg-green-900/30 border border-green-700 text-green-300 px-4 py-3 rounded-md mb-6 flex items-center">
-          {/* <CheckCircleIcon className="h-5 w-5 mr-2 text-green-400" /> */}
-          <span>{successMessage}</span>
-        </div>
-      )}
+      {serverError && <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-md mb-6"><span>{serverError}</span></div>}
+      {state.error && !serverError && <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-md mb-6"><span>Ошибка контекста: {state.error}</span></div>}
+      {successMessage && <div className="bg-green-900/30 border border-green-700 text-green-300 px-4 py-3 rounded-md mb-6"><span>{successMessage}</span></div>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Используем грид для лучшего расположения полей */}
+        <Input name="title" label="Название*" id="title" value={formData.title} onChange={handleChange} onBlur={handleBlur} error={formErrors.title} required />
+        <Input name="description" label="Описание*" id="description" type="textarea" rows={4} value={formData.description} onChange={handleChange} onBlur={handleBlur} error={formErrors.description} required />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input name="title" label="Название*" value={formData.title} onChange={handleChange} onBlur={handleBlur} placeholder="Например, Cyberpunk 2077" error={formErrors.title} required />
-          <Input name="genre" label="Жанр*" value={formData.genre} onChange={handleChange} onBlur={handleBlur} placeholder="RPG, Action, Strategy" error={formErrors.genre} required />
+          <Input name="genre" label="Жанр" id="genre" value={formData.genre} onChange={handleChange} onBlur={handleBlur} error={formErrors.genre} />
+          <Input name="platform" label="Платформы" id="platform" value={formData.platform} onChange={handleChange} onBlur={handleBlur} error={formErrors.platform} />
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input name="platform" label="Платформы*" value={formData.platform} onChange={handleChange} onBlur={handleBlur} placeholder="PC, PlayStation 5, Xbox Series X" error={formErrors.platform} required />
-          <Input name="developer" label="Разработчик*" value={formData.developer} onChange={handleChange} onBlur={handleBlur} placeholder="CD Projekt Red" error={formErrors.developer} required />
+          <Input name="developer" label="Разработчик" id="developer" value={formData.developer} onChange={handleChange} onBlur={handleBlur} error={formErrors.developer} />
+          <Input name="publisher" label="Издатель" id="publisher" value={formData.publisher} onChange={handleChange} onBlur={handleBlur} error={formErrors.publisher} />
         </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input name="releaseDate" label="Дата выхода*" type="date" value={formData.releaseDate} onChange={handleChange} onBlur={handleBlur} error={formErrors.releaseDate} required />
-          <Input name="price" label="Цена ($)*" type="number" value={String(formData.price)} onChange={handleChange} onBlur={handleBlur} placeholder="59.99" step="0.01" min="0.01" error={formErrors.price} required />
+          <Input name="releaseDate" label="Дата выхода" id="releaseDate" type="date" value={formData.releaseDate} onChange={handleChange} onBlur={handleBlur} error={formErrors.releaseDate} />
+          <Input name="price" label="Цена ($)*" id="price" type="number" value={formData.price} onChange={handleChange} onBlur={handleBlur} step="0.01" min="0" error={formErrors.price} required />
         </div>
-        
-        <Input name="imageUrl" label="URL изображения обложки" value={formData.imageUrl} onChange={handleChange} onBlur={handleBlur} placeholder="https://example.com/image.jpg" error={formErrors.imageUrl} />
-
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-1">Описание*</label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            rows={5}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm bg-slate-700 text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm
-                        ${formErrors.description ? 'border-red-500 focus:border-red-500' : 'border-slate-600 focus:border-indigo-500'}`}
-            placeholder="Подробное описание игры, ее особенности, сюжет..."
-            required
-          />
-          {formErrors.description && <p className="mt-1 text-xs text-red-400">{formErrors.description}</p>}
-        </div>
-
-        <Button type="submit" disabled={state.isLoading} variant="primary" className="w-full py-3 text-base">
-          {state.isLoading ? 'Обработка...' : (isEditMode ? 'Сохранить изменения' : 'Добавить игру')}
+        <Input name="imageUrl" label="URL обложки" id="imageUrl" type="url" value={formData.imageUrl} onChange={handleChange} onBlur={handleBlur} error={formErrors.imageUrl} />
+        <Input name="screenshotUrlsText" label="URL скриншотов (через запятую)" id="screenshotUrlsText" type="text" value={formData.screenshotUrlsText ?? ''} onChange={handleChange} onBlur={handleBlur} error={formErrors.screenshotUrlsText} />
+        <Button type="submit" disabled={isFormLoading || state.isLoading} variant="primary" className="w-full py-3 text-base" isLoading={isFormLoading || state.isLoading}>
+          {isFormLoading || state.isLoading ? (isEditMode ? 'Сохранение...' : 'Добавление...') : (isEditMode ? 'Сохранить изменения' : 'Добавить игру')}
         </Button>
       </form>
     </div>
   );
 };
-
 export default GameForm;

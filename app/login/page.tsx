@@ -1,12 +1,13 @@
 // app/login/page.tsx
 'use client';
 
-import { useState, ChangeEvent } from 'react'; // Добавлен ChangeEvent для типизации
+import { useState, ChangeEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // <--- ДОБАВЛЕН ИМПОРТ
+import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import AnimatedBackground from '@/components/ui/AnimatedBackground'; // <--- ДОБАВЛЕНО
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,45 +46,39 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="p-8 bg-slate-800 rounded-lg shadow-xl w-full max-w-md">
+    // Обертка для позиционирования фона и контента
+    <div className="relative flex flex-col items-center justify-center min-h-screen py-2 bg-slate-900 overflow-hidden px-4">
+      <AnimatedBackground /> {/* <--- АНИМИРОВАННЫЙ ФОН */}
+      
+      {/* Основной контейнер контента страницы */}
+      <div className="relative z-10 p-8 bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md"> {/* Добавил прозрачность и блюр */}
         <h1 className="text-3xl font-bold text-center text-white mb-6">
           Вход в GameHub
         </h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-300"
-            >
-              Email
-            </label>
+            {/* Label убран, т.к. он есть в Input */}
             <Input
               id="email"
               name="email"
               type="email"
-              label="Email" // <--- ПРЕДПОЛАГАЕМЫЙ ФИКС
+              label="Email"
               autoComplete="email"
               required
               value={email}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              className="mt-1 block w-full"
+              className="mt-1 block w-full" // className можно оставить для Input если он не задает w-full сам
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-300"
-            >
-              Пароль
-            </label>
+            {/* Label убран */}
             <Input
               id="password"
               name="password"
               type="password"
-              label="Пароль" // <--- ПРЕДПОЛАГАЕМЫЙ ФИКС
+              label="Пароль" 
               autoComplete="current-password"
               required
               value={password}

@@ -34,17 +34,22 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
       <Link href={`/games/${game.id}`} className="block"> {/* Обернем карточку в ссылку для лучшего UX */}
         <div className="relative w-full h-56 md:h-64"> {/* Увеличил высоту изображения */}
           <Image
-            src={game.imageUrl || '/public/1.jpg'}
+            // Consider using a public path for placeholder images. 
+            // e.g., if '/public/placeholder-game-cover.jpg' exists, use '/placeholder-game-cover.jpg'
+            src={game.imageUrl || '/placeholder-game-cover.jpg'} // Updated placeholder
             alt={game.title}
             fill // Заменил layout="fill" objectFit="cover" на fill для Next.js 13+
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Примерные размеры для оптимизации
             className="object-cover transition-transform duration-500 group-hover:scale-110" // Эффект приближения при наведении на группу
-            onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-image.jpg'; }}
+            onError={(e) => { 
+              // Ensure '/placeholder-image.jpg' exists in your /public folder
+              (e.target as HTMLImageElement).src = '/placeholder-image.jpg'; 
+            }}
           />
           {/* Оверлей для цены или других акцентов */}
           <div className="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
             {/* <CurrencyDollarIcon className="h-4 w-4 inline mr-1" /> */}
-            ${game.price.toFixed(2)}
+            {game.price !== null && game.price !== undefined ? `$${game.price.toFixed(2)}` : 'N/A'}
           </div>
         </div>
       </Link>
@@ -59,11 +64,11 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
           <div className="space-y-1 mb-4 text-sm text-slate-400">
             <p className="flex items-center">
               {/* <TagIcon className="h-4 w-4 mr-1.5 text-indigo-400" /> */}
-              <span className="font-medium text-slate-300 mr-1">Жанр:</span> {game.genre}
+              <span className="font-medium text-slate-300 mr-1">Жанр:</span> {game.genre || 'N/A'}
             </p>
             <p className="flex items-center">
               {/* <ComputerDesktopIcon className="h-4 w-4 mr-1.5 text-indigo-400" /> */}
-              <span className="font-medium text-slate-300 mr-1">Платформа:</span> {game.platform}
+              <span className="font-medium text-slate-300 mr-1">Платформа:</span> {game.platform || 'N/A'}
             </p>
           </div>
         </div>
@@ -75,6 +80,7 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
               Подробнее
             </Button>
           </Link>
+          {/* Conditionally render delete button if user is admin, or handle in context/API */}
           <Button variant="danger" onClick={handleDelete} className="text-sm py-2 px-3" title="Удалить игру">
             {/* <TrashIcon className="h-4 w-4" /> */}
             <span className="sm:hidden">🗑️</span> {/* Иконка для маленьких экранов */}

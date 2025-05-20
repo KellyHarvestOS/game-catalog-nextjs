@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import AnimatedBackground from '@/components/ui/AnimatedBackground'; // <--- ДОБАВЛЕНО
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -44,42 +45,41 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="p-8 bg-slate-800 rounded-lg shadow-xl w-full max-w-md">
+    // Обертка для позиционирования фона и контента
+    <div className="relative flex flex-col items-center justify-center min-h-screen py-2 bg-slate-900 overflow-hidden px-4">
+      <AnimatedBackground /> {/* <--- АНИМИРОВАННЫЙ ФОН */}
+
+      {/* Основной контейнер контента страницы */}
+      <div className="relative z-10 p-8 bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-xl w-full max-w-md"> {/* Добавил прозрачность и блюр */}
         <h1 className="text-3xl font-bold text-center text-white mb-8">
           Регистрация
         </h1>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Поле для имени */}
           <Input
-            label="Имя (опционально)" // <--- ПЕРЕДАЕМ LABEL
+            label="Имя" // Убрал (опционально), если оно не опционально для API
             name="name"
             type="text"
-            id="name" // Передаем id, так как Input его использует для htmlFor
+            id="name"
             autoComplete="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            // className не нужен здесь, если стили уже в компоненте Input
+            required // Если имя обязательно
           />
-
-          {/* Поле для Email */}
           <Input
-            label="Email" // <--- ПЕРЕДАЕМ LABEL
+            label="Email"
             name="email"
             type="email"
-            id="email" // Передаем id
+            id="email"
             autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-
-          {/* Поле для Пароля */}
           <Input
-            label="Пароль" // <--- ПЕРЕДАЕМ LABEL
+            label="Пароль"
             name="password"
             type="password"
-            id="password" // Передаем id
+            id="password"
             autoComplete="new-password"
             required
             value={password}
@@ -88,7 +88,7 @@ export default function RegisterPage() {
           />
 
           {error && (
-            <p className="text-sm text-red-500 bg-red-100 border border-red-400 p-3 rounded">
+            <p className="text-sm text-red-400 bg-red-900/30 p-3 rounded-md text-center"> {/* Стили ошибки как в LoginPage */}
               {error}
             </p>
           )}
@@ -97,8 +97,9 @@ export default function RegisterPage() {
             <Button
               type="submit"
               variant="primary"
-              className="w-full"
+              className="w-full flex justify-center py-3" // Стили кнопки как в LoginPage
               disabled={isLoading}
+              isLoading={isLoading} // Добавил isLoading проп для Button
             >
               {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
             </Button>
