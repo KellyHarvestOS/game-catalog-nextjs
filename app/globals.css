@@ -22,8 +22,8 @@ body {
   bottom: -150px; /* Начальная позиция: под нижней границей экрана */
   width: 40px;    /* Базовый размер, переопределяется для некоторых :nth-child */
   height: 40px;
-  background-color: rgba(55, 0, 175, 0.881); /* Полупрозрачный белый */
-  border: 1px solid rgba(255, 255, 255, 0.688);   /* Легкая граница */
+  background-color: rgba(81, 0, 255, 0.371); /* Полупрозрачный белый */
+  border: 1px solid rgba(255, 255, 255, 0.375);   /* Легкая граница */
   animation: flyUp 10s linear infinite;         /* Применение анимации */
 }
 

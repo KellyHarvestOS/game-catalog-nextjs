@@ -2,8 +2,8 @@
 import React from 'react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'link' | 'success' | 'warning';
-  size?: 'sm' | 'default' | 'lg';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'link' | 'success' | 'warning' ;
+  size?: 'sm' | 'default' | 'lg' | 'icon';
   isLoading?: boolean;
   leftIcon?: React.ReactElement;
   rightIcon?: React.ReactElement;
@@ -65,6 +65,9 @@ const Button: React.FC<ButtonProps> = ({
     default:
       sizeStyles = 'h-10 px-4 py-2';
       break;
+       case 'icon':
+    sizeStyles = 'h-10 w-10 p-0'; // ← Добавлено
+    break;
   }
 
   const buttonContent = (
