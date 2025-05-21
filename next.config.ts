@@ -69,6 +69,40 @@ const nextConfig = {
         port: '',
         pathname: '/img/embedgames/**', 
       },
+            {
+        protocol: 'https',
+        hostname: 'grandgames.net',
+      },
+        {
+        protocol: 'https',
+        hostname: 'store-images.s-microsoft.com',
+        port: '',
+        pathname: '/image/apps.**',
+      },
+        {
+        protocol: 'https',
+        hostname: 'cdn1.epicgames.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+  protocol: 'https',
+  hostname: 'cdn.akamai.steamstatic.com',
+  port: '',
+  pathname: '/steam/apps/**',
+},
+{
+  protocol: 'https',
+  hostname: 'cdn.akamai.steamstatic.com',
+  port: '',
+  pathname: '/**', // Разрешает все пути
+},
+{
+  protocol: 'https',
+  hostname: 'i.playground.ru',
+  port: '',
+  pathname: '/**',
+},
     ],
   },
 };
