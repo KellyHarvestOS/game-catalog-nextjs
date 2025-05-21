@@ -42,49 +42,49 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col"> 
-      <section
-        className="relative flex flex-col items-center justify-center text-center px-4 py-24 sm:py-32 md:py-40 lg:py-48 text-white overflow-hidden min-h-[70vh] sm:min-h-[80vh]" // Добавил min-h для высоты секции
-        style={{
-          backgroundImage: `url(${heroBackgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center', // Явное указание и горизонтального и вертикального центрирования
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-       
-        <div className="absolute inset-0 bg-slate-900/70 md:bg-slate-900/75 z-0"></div> 
+    <section
+      className="relative flex flex-col items-center justify-center text-center px-4 py-24 sm:py-32 md:py-40 lg:py-48 text-white overflow-hidden min-h-[70vh] sm:min-h-[80vh]"
+      style={{
+        backgroundImage: `url(${heroBackgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="absolute inset-0 bg-slate-900/70 md:bg-slate-900/75 z-0"></div>
 
-        {/* Контент Hero секции */}
-        <div className="relative z-10 max-w-4xl mx-auto">
-          {/* <Gamepad2Icon className="h-16 w-16 sm:h-20 sm:w-20 text-indigo-400 mb-6 mx-auto animate-pulse" /> */}
-           <div className="mb-6 text-5xl sm:text-6xl text-indigo-400 animate-pulse mx-auto w-fit">🎮</div>
-          
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 leading-tight">
-            Добро пожаловать в <span className="text-indigo-400">GameHub</span>!
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-slate-200 mb-10 max-w-2xl mx-auto">
-            Ваш лучший портал для поиска, открытия и добавления информации о любимых играх.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
-            <Link href="/games">
-              <Button 
-                variant="primary" 
-                size="lg" 
-                className="px-8 py-3 sm:py-4 text-base sm:text-lg w-full sm:w-auto shadow-lg hover:shadow-indigo-500/50 transform hover:scale-105"
-              >
-                {/* <SearchIcon className="h-5 w-5 mr-2" /> */}
+      <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="mb-6 text-5xl sm:text-6xl text-indigo-400 animate-pulse mx-auto w-fit">🎮</div>
+
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 leading-tight">
+          Добро пожаловать в <span className="text-indigo-400">GameHub</span>!
+        </h1>
+
+        <p className="text-lg sm:text-xl md:text-2xl text-slate-200 mb-10 max-w-2xl mx-auto">
+          Ваш лучший портал для поиска, открытия и добавления информации о любимых играх.
+        </p>
+
+     <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 mt-12">
+            <Link
+              href="/games"
+              className={`
+                inline-block relative
+                px-12 py-6 sm:px-16 sm:py-8
+                text-xl sm:text-2xl md:text-3xl font-extrabold
+                text-white
+                tracking-wider
+                rounded-2xl
+                shadow-2xl
+                overflow-hidden
+                transition-all duration-300 ease-out
+                transform hover:scale-110 hover:shadow-purple-500/50
+                focus:outline-none focus:ring-4 focus:ring-purple-500/60 focus:ring-offset-2 focus:ring-offset-slate-900
+                button-lava-animated
+              `}
+            >
+              <span className="relative z-10">
                 Смотреть каталог
-              </Button>
-            </Link>
-            <Link href="/games/add">
-              <Button 
-                variant="secondary" // Можно сделать ее более контрастной для фона, например, контурной белой
-                size="lg" 
-                className="px-8 py-3 sm:py-4 text-base sm:text-lg w-full sm:w-auto border-2 border-slate-300 text-slate-100 bg-slate-700/50 hover:bg-slate-600/70 hover:border-white shadow-lg transform hover:scale-105"
-              >
-                {/* <PlusCircleIcon className="h-5 w-5 mr-2" /> */}
-                Добавить игру
-              </Button>
+              </span>
             </Link>
           </div>
         </div>
