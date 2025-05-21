@@ -1,21 +1,23 @@
-# GameHub Catalog
+<h1 align="center">🎮 GameHub Catalog</h1>
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/6841bdf3-4bab-456a-833b-492ca821caf0" alt="GameHub Catalog" style="border-radius: 1rem; box-shadow: 0 8px 20px rgba(0,0,0,0.3);" width="100%" />
+</p>
 
+<p align="center">
+  Это современный каталог игр, созданный с использованием <strong>Next.js</strong>, <strong>TypeScript</strong>, <strong>Prisma</strong> и <strong>Tailwind CSS</strong>, вдохновлённый такими платформами, как <em>Steam</em>.
+</p>
 
-![3](https://github.com/user-attachments/assets/6841bdf3-4bab-456a-833b-492ca821caf0)
+---
 
-
-Это современный каталог игр, созданный с использованием Next.js, TypeScript, Prisma и Tailwind CSS, вдохновленный платформами вроде Steam.
-
-## Tech Stack & Features
-
-<!-- Используем Shields.io для значков -->
-<p align="left">
-  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js">
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
-  <img src="https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma">
-  <img src="https://img.shields.io/badge/NextAuth.js-000000?style=for-the-badge&logo=nextauthdotjs&logoColor=white" alt="NextAuth.js">
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
+  <img src="https://img.shields.io/badge/NextAuth.js-000000?style=for-the-badge&logo=nextauthdotjs&logoColor=white" alt="NextAuth.js" />
+  <img src="https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white" alt="ESLint" />
+  <img src="https://img.shields.io/badge/Prettier-F7B93E?style=for-the-badge&logo=prettier&logoColor=white" alt="Prettier" />
 </p>
 
 
