@@ -58,6 +58,7 @@ model Game {
   id               String    @id @default(cuid())
 
   description      String    @db.Text
+  title            String 
   genre            String?
   platform         String?
   developer        String?
