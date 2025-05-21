@@ -2,12 +2,29 @@
 'use client';
 
 import React, { createContext, useReducer, useContext, useCallback, ReactNode } from 'react';
-import { Game } from '@/types';
+import { Game } from '@/types'; // Game из @/types
 
+// Тип для данных, которые GameForm будет отправлять в addGame/updateGame
+// и которые эти функции будут отправлять на API
+interface GameApiPayload {
+  title: string;
+  description: string;
+  genre?: string | null;
+  platform?: string | null;
+  developer?: string | null;
+  publisher?: string | null;
+  releaseDate?: string | null; // Строка из формы
+  price: number | null;         // Число
+  coverImageUrl: string | null; // Отправляем это имя на API
+  screenshots?: string[];        // Массив URL-строк
+}
+
+// --- Остальная часть вашего GameContext.tsx (GameState, initialState, GameAction, gameReducer) остается такой же, как вы предоставили ---
+// ... (вставьте сюда ваш GameState, initialState, GameAction, gameReducer)...
 interface FilterOptions {
   genres: string[];
   platforms: string[];
-  developers?: string[]; // Добавил developers опционально
+  developers?: string[];
 }
 
 interface GameState {
@@ -39,7 +56,7 @@ type GameAction =
   | { type: 'UPDATE_GAME_SUCCESS'; payload: Game }
   | { type: 'UPDATE_GAME_FAILURE'; payload: string }
   | { type: 'DELETE_GAME_REQUEST' }
-  | { type: 'DELETE_GAME_SUCCESS'; payload: string } 
+  | { type: 'DELETE_GAME_SUCCESS'; payload: string }
   | { type: 'DELETE_GAME_FAILURE'; payload: string }
   | { type: 'FETCH_FILTER_OPTIONS_REQUEST' }
   | { type: 'FETCH_FILTER_OPTIONS_SUCCESS'; payload: FilterOptions }
@@ -52,10 +69,10 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     case 'UPDATE_GAME_REQUEST':
     case 'DELETE_GAME_REQUEST':
       return { ...state, isLoading: true, error: null };
-
     case 'FETCH_GAMES_SUCCESS':
       return { ...state, isLoading: false, games: action.payload, error: null };
     case 'ADD_GAME_SUCCESS':
+      // Убедимся, что добавляем игру в начало списка для немедленного отображения
       return { ...state, isLoading: false, games: [action.payload, ...state.games], error: null };
     case 'UPDATE_GAME_SUCCESS':
       return {
@@ -70,35 +87,35 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return {
         ...state,
         isLoading: false,
-        games: state.games.filter(game => game.id !== action.payload),
+        games: state.games.filter(game => game.id !== action.payload), // action.payload здесь ID удаленной игры
         error: null,
       };
-
     case 'FETCH_GAMES_FAILURE':
     case 'ADD_GAME_FAILURE':
     case 'UPDATE_GAME_FAILURE':
     case 'DELETE_GAME_FAILURE':
       return { ...state, isLoading: false, error: action.payload };
-
     case 'FETCH_FILTER_OPTIONS_REQUEST':
       return { ...state, isLoadingFilterOptions: true, filterOptionsError: null };
     case 'FETCH_FILTER_OPTIONS_SUCCESS':
       return { ...state, isLoadingFilterOptions: false, filterOptions: action.payload };
     case 'FETCH_FILTER_OPTIONS_FAILURE':
       return { ...state, isLoadingFilterOptions: false, filterOptionsError: action.payload, filterOptions: initialState.filterOptions };
-    
     default:
-      const exhaustiveCheck: never = action; // Для проверки полноты обработки action'ов
+      // const exhaustiveCheck: never = action; // Для проверки полноты, если нужно
       return state;
   }
 };
+// --- Конец вставленного кода ---
 
+
+// ИЗМЕНЕНЫ ТИПЫ АРГУМЕНТОВ И ВОЗВРАЩАЕМЫХ ЗНАЧЕНИЙ
 interface GameContextType {
   state: GameState;
   fetchGames: (filterQueryString?: string) => Promise<void>;
   fetchFilterOptions: () => Promise<void>;
-  addGame: (gameData: Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'isStatic' | 'screenshots'>) => Promise<Game | void>;
-  updateGame: (id: string, gameData: Partial<Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'isStatic' | 'screenshots'>>) => Promise<Game | void>;
+  addGame: (gameData: GameApiPayload) => Promise<Game | undefined>; // <--- ИЗМЕНЕНО
+  updateGame: (id: string, gameData: GameApiPayload) => Promise<Game | undefined>; // <--- ИЗМЕНЕНО (gameData теперь GameApiPayload)
   deleteGame: (id: string) => Promise<void>;
 }
 
@@ -122,7 +139,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       dispatch({ type: 'FETCH_GAMES_FAILURE', payload: (error as Error).message });
     }
-  }, []); 
+  }, []);
 
   const fetchFilterOptions = useCallback(async () => {
     dispatch({ type: 'FETCH_FILTER_OPTIONS_REQUEST' });
@@ -139,37 +156,41 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  const addGame = useCallback(async (gameData: Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'isStatic' | 'screenshots'>): Promise<Game | void> => {
+  // ИЗМЕНЕНО: addGame принимает GameApiPayload и возвращает Promise<Game | undefined>
+  const addGame = useCallback(async (gameData: GameApiPayload): Promise<Game | undefined> => {
     dispatch({ type: 'ADD_GAME_REQUEST' });
     try {
       const response = await fetch(API_BASE_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(gameData)});
-      if (!response.ok) { 
-        const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
-        throw new Error(errorData.message || "Failed to add game");
+      const newGame = await response.json(); // Сначала получаем JSON
+      if (!response.ok) {
+        throw new Error(newGame.message || "Failed to add game");
       }
-      const newGame = await response.json();
-      dispatch({ type: 'ADD_GAME_SUCCESS', payload: newGame});
-      return newGame;
-    } catch (error) { 
-      dispatch({ type: 'ADD_GAME_FAILURE', payload: (error as Error).message });
-      throw error; // Перебрасываем ошибку для обработки в вызывающем коде
+      dispatch({ type: 'ADD_GAME_SUCCESS', payload: newGame as Game }); // newGame должен быть типа Game
+      return newGame as Game; // Возвращаем созданную игру
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      dispatch({ type: 'ADD_GAME_FAILURE', payload: errorMessage });
+      // throw error; // Можно перебросить, чтобы GameForm поймал и установил serverError
+      return undefined; // Или вернуть undefined, если ошибка уже обработана dispatch
     }
   }, []);
 
-  const updateGame = useCallback(async (id: string, gameData: Partial<Omit<Game, 'id' | 'createdAt' | 'updatedAt' | 'isStatic' | 'screenshots'>>): Promise<Game | void> => {
+  // ИЗМЕНЕНО: updateGame принимает GameApiPayload и возвращает Promise<Game | undefined>
+  const updateGame = useCallback(async (id: string, gameData: GameApiPayload): Promise<Game | undefined> => {
     dispatch({ type: 'UPDATE_GAME_REQUEST' });
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(gameData)});
-      if (!response.ok) { 
-        const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
-        throw new Error(errorData.message || "Failed to update game");
+      const updatedGame = await response.json(); // Сначала получаем JSON
+      if (!response.ok) {
+        throw new Error(updatedGame.message || "Failed to update game");
       }
-      const updatedGame = await response.json();
-      dispatch({ type: 'UPDATE_GAME_SUCCESS', payload: updatedGame});
-      return updatedGame;
-    } catch (error) { 
-      dispatch({ type: 'UPDATE_GAME_FAILURE', payload: (error as Error).message });
-      throw error;
+      dispatch({ type: 'UPDATE_GAME_SUCCESS', payload: updatedGame as Game }); // updatedGame должен быть типа Game
+      return updatedGame as Game; // Возвращаем обновленную игру
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      dispatch({ type: 'UPDATE_GAME_FAILURE', payload: errorMessage });
+      // throw error;
+      return undefined;
     }
   }, []);
 
@@ -177,21 +198,23 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'DELETE_GAME_REQUEST' });
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' });
-      if (!response.ok) { 
+      if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
         throw new Error(errorData.message || "Failed to delete game");
       }
       dispatch({ type: 'DELETE_GAME_SUCCESS', payload: id });
-    } catch (error) { 
-      dispatch({ type: 'DELETE_GAME_FAILURE', payload: (error as Error).message });
-      throw error;
+      // Для deleteGame обычно не нужно возвращать данные игры
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      dispatch({ type: 'DELETE_GAME_FAILURE', payload: errorMessage });
+      throw error; // Перебрасываем, чтобы компонент мог отреагировать, если нужно
     }
   }, []);
 
   return (
-    <GameContext.Provider value={{ 
-        state, 
-        fetchGames, 
+    <GameContext.Provider value={{
+        state,
+        fetchGames,
         fetchFilterOptions,
         addGame,
         updateGame,
