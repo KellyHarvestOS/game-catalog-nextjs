@@ -1,36 +1,55 @@
 // app/(main)/games/[id]/page.tsx
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Game as GameType, UserRole } from '@/types';
+import { Game as GameTypeFromShared, UserRole, ScreenshotType as LocalScreenshotType } from '@/types';
 import { useSession } from 'next-auth/react';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
 import Image from 'next/image';
 
-const ScreenshotGallery = ({ urls }: { urls: string[] }) => {
+interface GamePageStateType extends GameTypeFromShared {
+  isOwned?: boolean;
+  screenshots?: LocalScreenshotType[];
+}
+
+const ScreenshotGallery = ({ urls }: { urls: LocalScreenshotType[] | undefined }) => {
   if (!urls || urls.length === 0) return null;
   return (
-    <div className="mt-8">
-      <h3 className="text-2xl font-semibold text-slate-200 mb-4">Скриншоты</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {urls.map((url, index) => (
-          <div key={index} className="aspect-video relative rounded-lg overflow-hidden shadow-lg group">
+    <section className="mt-8 sm:mt-10">
+      <h3 className="text-xl sm:text-2xl font-semibold text-indigo-300 mb-4">Скриншоты</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+        {urls.map((screenshot, index) => (
+          <a
+            key={screenshot.id || `ss-${index}`}
+            href={screenshot.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block aspect-video relative rounded-lg overflow-hidden shadow-lg group focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+          >
             <Image
-              src={url}
+              src={screenshot.url}
               alt={`Скриншот ${index + 1}`}
-              layout="fill"
-              objectFit="cover"
-              className="group-hover:scale-110 transition-transform duration-300"
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-image-error.jpg';}}
             />
-            {/* Можно добавить лайтбокс или открытие в новой вкладке */}
-            <a href={url} target="_blank" rel="noopener noreferrer" className="absolute inset-0" aria-label={`Открыть скриншот ${index + 1}`}></a>
-          </div>
+          </a>
         ))}
       </div>
-    </div>
+    </section>
   );
 };
+
+const DetailItem: React.FC<{ label: string, value?: string | number | null, IconComponent?: React.ElementType }> = ({ label, value, IconComponent }) => (
+    <div className="flex items-start py-3 border-b border-slate-700 last:border-b-0">
+        {IconComponent && <IconComponent className="h-5 w-5 text-indigo-400 mr-3 mt-0.5 flex-shrink-0" />}
+        <span className="font-medium text-slate-300 w-1/3 md:w-1/4 capitalize">{label}:</span>
+        <span className="text-slate-400 w-2/3 md:w-3/4">{value || 'N/A'}</span>
+    </div>
+);
+
 
 export default function GameDetailPage() {
   const params = useParams();
@@ -41,11 +60,13 @@ export default function GameDetailPage() {
   const isLoadingSession = sessionStatus === 'loading';
   const userRole = session?.user?.role as UserRole | undefined;
 
-  const [game, setGame] = useState<GameType | null>(null);
+  const [game, setGame] = useState<GamePageStateType | null>(null);
   const [isLoadingGame, setIsLoadingGame] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
+  const [isProcessingPurchase, setIsProcessingPurchase] = useState(false);
 
-  const loadGameData = async () => {
+  const loadGameData = useCallback(async () => {
     if (!id) {
       setError("ID игры не предоставлен.");
       setIsLoadingGame(false);
@@ -53,54 +74,76 @@ export default function GameDetailPage() {
     }
     setIsLoadingGame(true);
     setError(null);
+    setPurchaseMessage(null);
     try {
       const response = await fetch(`/api/games/${id}`);
       if (!response.ok) {
-        let errorMessage = `HTTP error! status: ${response.status}`;
+        let errorMessage = `Ошибка сервера: ${response.status}`;
         try {
           const errorData = await response.json();
-          if (errorData && errorData.message) {
-            errorMessage = errorData.message;
-          }
-        } catch (e) {
-          const textError = await response.text().catch(() => "Не удалось прочитать тело ответа с ошибкой.");
-          errorMessage = `Ошибка сервера: ${response.status}. ${textError.substring(0, 100)}`;
-        }
+          if (errorData && errorData.message) errorMessage = errorData.message;
+        } catch (e) { /* ignore */ }
         throw new Error(errorMessage);
       }
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await response.json();
-        setGame(data);
-      } else {
-        const textData = await response.text();
-        console.warn("Ожидался JSON от /api/games/[id], но получен:", contentType, "Данные:", textData.substring(0,200));
-        throw new Error(`Неожиданный формат ответа от сервера: ${contentType}`);
-      }
+      const data: GamePageStateType = await response.json();
+      console.log("ДАННЫЕ ИГРЫ НА СТРАНИЦЕ ДЕТАЛЕЙ (page.tsx):", data);
+      setGame(data);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setIsLoadingGame(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    loadGameData();
-  }, [id]); // Зависимость только от id
+    if (id) { // Загружаем данные только если id доступен
+        loadGameData();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, sessionStatus, loadGameData]); // Добавил loadGameData в зависимости
 
   const handleRetryFetch = () => {
     loadGameData();
   };
 
-  const handleBuyClick = () => {
-    // Логика покупки, например, редирект на страницу оплаты или добавление в корзину
-    // router.push(`/checkout/${game?.id}`);
-    alert(`Симуляция покупки игры: ${game?.title}`);
+  const handlePurchaseGame = async () => {
+    if (!game || !session?.user) {
+      setPurchaseMessage('Необходимо авторизоваться для покупки.');
+      return;
+    }
+    if (game.isOwned) {
+      setPurchaseMessage('Эта игра уже в вашей библиотеке.');
+      return;
+    }
+    setIsProcessingPurchase(true);
+    setPurchaseMessage(null); setError(null);
+    if (game.price && game.price > 0) {
+      const confirmPayment = confirm(
+        `Игра "${game.title}" стоит ${game.price.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}. Продолжить симуляцию оплаты?`
+      );
+      if (!confirmPayment) {
+        setPurchaseMessage('Оплата отменена.');
+        setIsProcessingPurchase(false);
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    try {
+      const response = await fetch(`/api/games/${game.id}/purchase`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Не удалось совершить покупку.');
+      setPurchaseMessage(data.message);
+      setGame(prevGame => prevGame ? { ...prevGame, isOwned: true } : null);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsProcessingPurchase(false);
+    }
   };
 
   const handleDeleteGame = async () => {
-    if (!game || userRole !== 'ADMIN' || game.isStatic) return; // Не удаляем статические игры
-    if (confirm(`Вы уверены, что хотите удалить игру "${game.title}"?`)) {
+    if (!game || userRole !== 'ADMIN' || game.isStatic) return;
+    if (confirm(`Вы уверены, что хотите удалить игру "${game.title}"? Эту операцию нельзя будет отменить.`)) {
       try {
         const response = await fetch(`/api/games/${game.id}`, { method: 'DELETE' });
         if (!response.ok) {
@@ -109,11 +152,8 @@ export default function GameDetailPage() {
         }
         alert('Игра успешно удалена!');
         router.push('/games');
-        router.refresh(); // Может помочь обновить список на предыдущей странице
-      } catch (err: any) {
-        // setError(err.message); // Можно установить локальную ошибку, если нужно
-        alert(`Ошибка при удалении: ${err.message}`);
-      }
+        router.refresh();
+      } catch (err: any) { alert(`Ошибка при удалении: ${err.message}`); }
     }
   };
 
@@ -127,136 +167,141 @@ export default function GameDetailPage() {
     );
   }
 
-  if (error) {
+  if (error && !purchaseMessage) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-200px)] bg-slate-900">
         <div className="text-center p-10">
             <div className="text-5xl mb-4 animate-pulse">😔</div>
             <h2 className="text-2xl font-semibold text-red-400 mb-2">Ошибка загрузки</h2>
             <p className="text-slate-400 mb-6 max-w-md">{error}</p>
-            <Button onClick={handleRetryFetch} variant="secondary">
-              Попробовать снова
-            </Button>
+            <Button onClick={handleRetryFetch} variant="secondary">Попробовать снова</Button>
         </div>
       </div>
     );
   }
 
   if (!game) {
-    return (
+     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-200px)] bg-slate-900">
         <div className="text-center p-10 text-slate-300 text-xl">Игра не найдена.</div>
       </div>
     );
   }
 
-  const screenshotUrlsToDisplay: string[] = game.screenshots || [];
+  const imageDisplaySrc = game.coverImageUrl || (game as any).imageUrl || '/placeholder-game-detail.jpg';
+  const errorDisplaySrc = '/placeholder-image-error.jpg';
 
   return (
-    <div className="bg-slate-900 text-slate-100 min-h-screen py-8 md:py-12">
-      <div className="container mx-auto px-4">
-        <div className="bg-slate-800 shadow-2xl rounded-xl overflow-hidden">
+    <div className="bg-slate-900 text-slate-100 min-h-screen">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <div className="mb-6 sm:mb-8">
+            <Link href="/games" className="inline-flex items-center text-indigo-400 hover:text-indigo-300 transition-colors group">
+                <span className="text-xl mr-2 transition-transform group-hover:-translate-x-1">‹</span>
+                <span className="text-sm font-medium">Назад к каталогу</span>
+            </Link>
+        </div>
+
+        <article className="bg-slate-800 shadow-2xl rounded-xl overflow-hidden">
           <div className="md:flex">
-            <div className="md:w-2/5 lg:w-1/3 relative w-full aspect-w-3 aspect-h-4 md:aspect-w-4 md:aspect-h-5 xl:aspect-w-3 xl:aspect-h-4">
-              {game.imageUrl ? (
+            <div className="md:w-2/5 lg:w-1/3 relative w-full aspect-[3/4] sm:aspect-[16/9] md:aspect-auto md:min-h-[500px] lg:min-h-0 bg-slate-700 md:rounded-l-xl md:rounded-tr-none">
+              {imageDisplaySrc && imageDisplaySrc !== '/placeholder-game-detail.jpg' ? (
                 <Image
-                  src={game.imageUrl}
-                  alt={`Обложка игры ${game.title}`}
-                  layout="fill"
-                  objectFit="cover"
+                  src={imageDisplaySrc}
+                  alt={`Обложка игры ${game.title || 'Без названия'}`}
+                  fill
+                  sizes="(max-width: 767px) 100vw, (max-width: 1023px) 40vw, 33vw"
+                  className="object-cover md:rounded-l-xl md:rounded-tr-none"
                   priority
-                  className="rounded-tl-xl md:rounded-l-xl md:rounded-tr-none"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).srcset = errorDisplaySrc;
+                    (e.target as HTMLImageElement).src = errorDisplaySrc;
+                  }}
                 />
               ) : (
-                <div className="w-full h-full bg-slate-700 flex items-center justify-center rounded-tl-xl md:rounded-l-xl md:rounded-tr-none">
+                <div className="w-full h-full flex items-center justify-center">
                   <span className="text-slate-500 text-lg">Нет обложки</span>
                 </div>
               )}
             </div>
 
-            <div className="md:w-3/5 lg:w-2/3 p-6 md:p-8 lg:p-10 flex flex-col">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-indigo-400 mb-2 leading-tight">
-                {game.title}
+            <div className="md:w-3/5 lg:w-2/3 p-6 sm:p-8 lg:p-10 flex flex-col">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-100 mb-2 leading-tight">
+                {game.title || 'Без названия'}
               </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400 mb-4">
-                {game.developer && <span>Разработчик: <span className="text-slate-300">{game.developer}</span></span>}
-                {game.publisher && <span>Издатель: <span className="text-slate-300">{game.publisher}</span></span>}
-              </div>
-              {game.releaseDate && (
-                <p className="text-sm text-slate-400 mb-1">
-                  Дата выхода: <span className="text-slate-300">{new Date(game.releaseDate).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                </p>
-              )}
-              {game.platform && (
-                <p className="text-sm text-slate-400 mb-4">
-                  Платформы: <span className="text-slate-300">{game.platform}</span>
-                </p>
-              )}
-              {game.genre && (
-                <div className="mb-6">
-                  <span className="px-3 py-1 text-xs font-semibold text-indigo-200 bg-indigo-700/50 rounded-full">
-                    {game.genre}
-                  </span>
-                </div>
-              )}
+              <p className="text-2xl sm:text-3xl font-bold text-green-400 mb-6 sm:mb-8">
+                {typeof game.price === 'number' ? (game.price === 0 ? 'Бесплатно' : `$${game.price.toFixed(2)}`) : 'Цена не указана'}
+              </p>
 
-              <div className="mt-auto"> {/* Прижимает кнопки и цену к низу */}
-                {game.price !== null && game.price !== undefined && (
-                  <p className="text-3xl lg:text-4xl font-bold text-green-400 mb-6">
-                    {game.price === 0 ? 'Бесплатно' : `${game.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}`}
-                  </p>
-                )}
+              {purchaseMessage && <p className={`mb-4 p-3 rounded-md text-center text-sm ${purchaseMessage.toLowerCase().includes('успешно') || purchaseMessage.toLowerCase().includes('добавлена') ? 'bg-green-900/50 text-green-300' : 'bg-yellow-900/50 text-yellow-300'}`}>{purchaseMessage}</p>}
+              {error && !purchaseMessage && <p className="mb-4 p-3 rounded-md text-center text-sm bg-red-900/50 text-red-300">{error}</p>}
 
-                <div className="space-y-3">
+              <div className="space-y-3 mb-6 sm:mb-8">
                   {session?.user && (
-                    <Button onClick={handleBuyClick} variant="success" size="lg" className="w-full sm:w-auto py-3 text-base">
-                      Купить игру
-                    </Button>
+                    game.isOwned ? (
+                      <Button variant="secondary" size="lg" className="w-full sm:w-auto py-3 text-base" disabled>
+                        В вашей библиотеке
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handlePurchaseGame}
+                        variant="success"
+                        size="lg"
+                        className="w-full sm:w-auto py-3 text-base"
+                        isLoading={isProcessingPurchase}
+                        disabled={isProcessingPurchase || isLoadingGame}
+                      >
+                        {isProcessingPurchase ? 'Обработка...' : (game.price === 0 ? 'Получить бесплатно' : 'Купить игру')}
+                      </Button>
+                    )
                   )}
                   {!session?.user && (
                     <p className="text-slate-300 text-center sm:text-left">
                       <Link href="/login" className="text-indigo-400 hover:underline font-semibold">Войдите</Link> или <Link href="/register" className="text-indigo-400 hover:underline font-semibold">зарегистрируйтесь</Link>, чтобы купить.
                     </p>
                   )}
-
-                  {userRole === 'ADMIN' && !game.isStatic && (
-                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-700/50 mt-4">
-                      <Link href={`/games/${game.id}/edit`} className="w-full sm:w-auto">
-                        <Button variant="warning" className="w-full">Редактировать</Button>
-                      </Link>
-                      <Button variant="danger" onClick={handleDeleteGame} className="w-full sm:w-auto">
-                        Удалить игру
-                      </Button>
-                    </div>
-                  )}
-                </div>
               </div>
-            </div>
-          </div>
 
-          {(game.description || screenshotUrlsToDisplay.length > 0) && (
-            <div className="p-6 md:p-8 lg:p-10 border-t border-slate-700/50">
+              <section className="mb-6 sm:mb-8">
+                <h2 className="sr-only">Основная информация</h2>
+                <div className="border border-slate-700 rounded-lg overflow-hidden">
+                    <DetailItem label="Жанр" value={game.genre} />
+                    <DetailItem label="Платформы" value={game.platform} />
+                    <DetailItem label="Разработчик" value={game.developer} />
+                    <DetailItem label="Издатель" value={game.publisher} />
+                    <DetailItem
+                        label="Дата выхода"
+                        value={game.releaseDate ? new Date(game.releaseDate).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined}
+                    />
+                </div>
+              </section>
+
               {game.description && (
-                <>
-                  <h2 className="text-2xl font-semibold text-slate-200 mb-4">Описание</h2>
-                  <p className="text-slate-300 leading-relaxed whitespace-pre-wrap mb-8">
-                    {game.description}
-                  </p>
-                </>
+                <section className="mb-6 sm:mb-8">
+                  <h2 className="text-xl font-semibold text-indigo-300 mb-3">Описание:</h2>
+                  <div className="prose prose-sm sm:prose-base prose-invert max-w-none text-slate-300 leading-relaxed">
+                    <p>{game.description}</p>
+                  </div>
+                </section>
               )}
-              <ScreenshotGallery urls={screenshotUrlsToDisplay} />
-            </div>
-          )}
-        </div>
 
-        <div className="mt-12 text-center">
-            <Link href="/games">
-                <Button variant="ghost" className="text-indigo-400 hover:bg-slate-700">
-                    ← Вернуться в каталог
-                </Button>
-            </Link>
-        </div>
-      </div>
-    </div>
+              {game.screenshots && game.screenshots.length > 0 && (
+                <ScreenshotGallery urls={game.screenshots} />
+              )}
+
+              {userRole === 'ADMIN' && !game.isStatic && (
+                <div className="mt-auto pt-6 border-t border-slate-700 flex flex-col sm:flex-row gap-3">
+                  <Link href={`/games/${game.id}/edit`} className="w-full sm:w-auto">
+                    <Button variant="warning" className="w-full">Редактировать</Button>
+                  </Link>
+                  <Button variant="danger" onClick={handleDeleteGame} className="w-full sm:w-auto">
+                    Удалить игру
+                  </Button>
+                </div>
+              )}
+            </div> {/* Закрывающий div для md:w-3/5 lg:w-2/3 */}
+          </div> {/* Закрывающий div для md:flex */}
+        </article> {/* Закрывающий тег article */}
+      </div> {/* Закрывающий div для container */}
+    </div> // Закрывающий div для bg-slate-900
   );
 }

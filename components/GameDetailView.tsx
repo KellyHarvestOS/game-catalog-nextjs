@@ -4,8 +4,6 @@ import { Game } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import Button from "./ui/Button";
-// Иконки для примера (можно использовать heroicons или другие)
-// import { TagIcon, ComputerDesktopIcon, UserGroupIcon, CalendarDaysIcon, ArrowLeftIcon, ShoppingCartIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
 interface GameDetailViewProps {
     game: Game | null;
@@ -13,12 +11,11 @@ interface GameDetailViewProps {
     error: string | null;
 }
 
-// Вспомогательный компонент для отображения строки деталей
-const DetailItem: React.FC<{ label: string, value: string | number, IconComponent?: React.ElementType }> = ({ label, value, IconComponent }) => (
+const DetailItem: React.FC<{ label: string, value: string | number | null | undefined, IconComponent?: React.ElementType }> = ({ label, value, IconComponent }) => (
     <div className="flex items-start py-3 border-b border-slate-700 last:border-b-0">
         {IconComponent && <IconComponent className="h-5 w-5 text-indigo-400 mr-3 mt-0.5 flex-shrink-0" />}
-        <span className="font-medium text-slate-300 w-1/3 md:w-1/4 capitalize">{label}:</span> {/* capitalize для метки */}
-        <span className="text-slate-400 w-2/3 md:w-3/4">{value}</span>
+        <span className="font-medium text-slate-300 w-1/3 md:w-1/4 capitalize">{label}:</span>
+        <span className="text-slate-400 w-2/3 md:w-3/4">{value || 'N/A'}</span>
     </div>
 );
 
@@ -60,6 +57,9 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({ game, isLoading, error 
         );
     }
 
+    const imageDisplaySrc = game.coverImageUrl || game.imageUrl || '/placeholder-game-detail.jpg';
+    const errorDisplaySrc = '/placeholder-image-error.jpg';
+
     return (
         <div className="container mx-auto px-4 py-8 md:py-12">
             <div className="mb-6 sm:mb-8">
@@ -71,36 +71,37 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({ game, isLoading, error 
 
             <article className="bg-slate-800 shadow-2xl rounded-xl overflow-hidden">
                 <div className="grid grid-cols-1 lg:grid-cols-5">
-                    <div className="lg:col-span-2 relative min-h-[300px] sm:min-h-[400px] md:min-h-[450px] lg:min-h-full">
+                    <div className="lg:col-span-2 relative min-h-[300px] sm:min-h-[400px] md:min-h-[450px] lg:min-h-full bg-slate-700">
                         <Image
-                            src={game.imageUrl || '/placeholder-image.jpg'}
-                            alt={`Обложка игры ${game.title}`}
+                            src={imageDisplaySrc}
+                            alt={`Обложка игры ${game.title || 'Без названия'}`}
                             fill
                             sizes="(max-width: 1023px) 100vw, 40vw"
                             className="object-cover"
                             priority
-                            onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-image.jpg'; }}
+                            onError={(e) => { (e.target as HTMLImageElement).src = errorDisplaySrc; }}
                         />
                     </div>
 
                     <div className="lg:col-span-3 p-6 sm:p-8 lg:p-10">
                         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-100 mb-2 leading-tight">
-                            {game.title}
+                            {game.title || 'Без названия'}
                         </h1>
                         <p className="text-2xl sm:text-3xl font-bold text-green-400 mb-6 sm:mb-8">
-                            {typeof game.price === 'number' ? `$${game.price.toFixed(2)}` : 'N/A'}
+                            {typeof game.price === 'number' ? (game.price === 0 ? 'Бесплатно' : `$${game.price.toFixed(2)}`) : 'Цена не указана'}
                         </p>
                         
                         <section className="mb-6 sm:mb-8">
                             <h2 className="sr-only">Основная информация</h2>
                             <div className="border border-slate-700 rounded-lg overflow-hidden">
-                                <DetailItem label="Жанр" value={game.genre || 'N/A'} />
-                                <DetailItem label="Платформы" value={game.platform || 'N/A'} />
-                                <DetailItem label="Разработчик" value={game.developer || 'N/A'} />
+                                <DetailItem label="Жанр" value={game.genre} />
+                                <DetailItem label="Платформы" value={game.platform} />
+                                <DetailItem label="Разработчик" value={game.developer} />
                                 <DetailItem 
                                     label="Дата выхода" 
-                                    value={game.releaseDate ? new Date(game.releaseDate).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'} 
+                                    value={game.releaseDate ? new Date(game.releaseDate).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined}
                                 />
+                                <DetailItem label="Издатель" value={game.publisher} />
                             </div>
                         </section>
 
@@ -114,6 +115,19 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({ game, isLoading, error 
                                 )}
                             </div>
                         </section>
+                        
+                        {game.screenshots && game.screenshots.length > 0 && (
+                            <section>
+                                <h2 className="text-xl font-semibold text-indigo-300 mb-3">Скриншоты:</h2>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    {game.screenshots.map(ss => (
+                                        <div key={ss.id} className="aspect-video relative rounded-lg overflow-hidden shadow-md">
+                                            <Image src={ss.url} alt={`Скриншот ${game.title || 'игры'}`} fill className="object-cover" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
                     </div>
                 </div>
             </article>
