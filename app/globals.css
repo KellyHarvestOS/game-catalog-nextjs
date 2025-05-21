@@ -5,75 +5,132 @@
 
 /* Дополнительные глобальные стили, если нужны */
 body {
-  @apply bg-slate-900 text-slate-100; /* Изменил на slate для консистентности с другими компонентами */
-}
-.bgSquares {
-  position: absolute; /* Позиционируется относительно ближайшего родителя с position: relative/absolute/fixed */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden; /* Скрывает квадраты, когда они вылетают за пределы */
-  z-index: 0;      /* Помещает квадраты под основным контентом (если у контента z-index > 0) */
+  @apply bg-slate-900 text-slate-100;
 }
 
-.square {
-  position: absolute;
-  bottom: -150px; /* Начальная позиция: под нижней границей экрана */
-  width: 40px;    /* Базовый размер, переопределяется для некоторых :nth-child */
-  height: 40px;
-  background-color: rgba(81, 0, 255, 0.371); /* Полупрозрачный белый */
-  border: 1px solid rgba(255, 255, 255, 0.375);   /* Легкая граница */
-  animation: flyUp 10s linear infinite;         /* Применение анимации */
-}
 
-/* Разные размеры, скорости (animation-duration) и задержки (animation-delay) для разных квадратов,
-   чтобы они выглядели более хаотично и интересно. */
-.square:nth-child(1) { left: 10%; animation-duration: 12s; animation-delay: 0s; width: 80px; height: 80px; }
-.square:nth-child(2) { left: 20%; animation-duration: 15s; animation-delay: 1s; width: 30px; height: 30px; }
-.square:nth-child(3) { left: 30%; animation-duration: 10s; animation-delay: 2s; }
-.square:nth-child(4) { left: 40%; animation-duration: 18s; animation-delay: 0.5s; width: 50px; height: 50px; }
-.square:nth-child(5) { left: 50%; animation-duration: 13s; animation-delay: 3s; width: 20px; height: 20px; }
-.square:nth-child(6) { left: 60%; animation-duration: 16s; animation-delay: 1.5s; width: 100px; height: 100px; }
-.square:nth-child(7) { left: 70%; animation-duration: 11s; animation-delay: 2.5s; }
-.square:nth-child(8) { left: 80%; animation-duration: 14s; animation-delay: 0.2s; width: 60px; height: 60px; }
-.square:nth-child(9) { left: 90%; animation-duration: 17s; animation-delay: 1.8s; width: 45px; height: 45px; }
-.square:nth-child(10) { left: 5%; animation-duration: 12s; animation-delay: 2.2s; }
-
-
-/* Определение самой анимации flyUp */
-@keyframes flyUp {
-  0% {
-    transform: translateY(0) rotate(0deg); /* Начальное положение и вращение */
-    opacity: 1;
-    border-radius: 0%; /* Начальная форма - квадрат */
-  }
-  100% {
-    transform: translateY(-120vh) rotate(720deg); /* Конечное положение (далеко вверху) и вращение */
-    opacity: 0; /* Исчезают */
-    border-radius: 50%; /* Превращаются в круги перед исчезновением */
-  }
-}
-/* Добавляем слой для кастомных утилит, чтобы можно было использовать theme() */
 @layer utilities {
-  /* Анимация "шиммера" (переливающийся градиент) */
+
+  
+  @keyframes gradient-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animate-gradient-flow {
+    background-size: 200% 200%;
+    animation: gradient-flow 10s ease infinite;
+  }
+
+  /* Анимация для эффекта "лавовой лампы" (для кнопки "Смотреть каталог") */
+  @keyframes lava-flow { /* Это определение было у вас ниже, переносим сюда */
+    0% { background-position: 0% 0%; }
+    25% { background-position: 100% 50%; }
+    50% { background-position: 50% 100%; }
+    75% { background-position: 0% 50%; }
+    100% { background-position: 0% 0%; }
+  }
+
+  .button-lava-animated {
+    background: 
+      radial-gradient(circle at 10% 10%, theme('colors.purple.800') 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, theme('colors.indigo.700') 0%, transparent 50%),
+      radial-gradient(circle at 30% 80%, theme('colors.sky.500') 0%, transparent 50%),
+      radial-gradient(circle at 90% 90%, theme('colors.pink.500') 0%, transparent 50%),
+      theme('colors.slate.900'); /* Фоновый цвет подложки */
+    background-size: 400% 400%;
+    animation: lava-flow 20s ease-in-out infinite;
+    /* transition: background-position 0.5s ease; Убрал, т.к. animation уже есть */
+  }
+
+  /* Анимация пульсирующего свечения */
+  @keyframes pulse-glow {
+    0%, 100% { 
+      box-shadow: 
+        0 0 5px theme('colors.indigo.200'), 
+        0 0 10px theme('colors.indigo.200'), 
+        0 0 15px theme('colors.purple.200'), 
+        0 0 20px theme('colors.purple.200'); 
+    }
+    50% { 
+      box-shadow: 
+        0 0 10px theme('colors.indigo.500'), 
+        0 0 20px theme('colors.indigo.500'), 
+        0 0 30px theme('colors.purple.500'), 
+        0 0 40px theme('colors.purple.500'); 
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 4s ease-in-out infinite;
+  }
+
+  /* Анимация "шиммера" (переливающийся градиент для скелетонов загрузки) */
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+
   .animate-shimmer {
     animation: shimmer 2s infinite linear;
-    /* 
-      Подберите цвета: 
-      - первый и третий цвет - основной цвет заглушки
-      - второй цвет - более светлый "блик"
-    */
     background: linear-gradient(to right, theme('colors.slate.700') 4%, theme('colors.slate.600') 25%, theme('colors.slate.700') 36%);
-    background-size: 1000px 100%; /* Ширина градиента должна быть больше ширины элемента */
+    background-size: 1000px 100%;
   }
 
-  @keyframes shimmer {
+  /* Стили для фона с летящими квадратами */
+  .bgSquares {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0; /* Убедитесь, что контент имеет z-index выше, если нужно */
+  }
+
+  .square {
+    position: absolute;
+    bottom: -150px;
+    width: 40px;
+    height: 40px;
+    /* Цвет изменен для лучшей видимости на темном фоне, если ваш фон slate.900 */
+    background-color: rgba(136, 0, 255, 0.682); /* полупрозрачный slate-500 */
+    border: 1px solid rgba(195, 209, 229, 0.768);   /* граница slate-500 */
+    animation: flyUp 10s linear infinite;
+  }
+
+  .square:nth-child(1) { left: 10%; animation-duration: 12s; animation-delay: 0s; width: 80px; height: 80px; }
+  .square:nth-child(2) { left: 20%; animation-duration: 15s; animation-delay: 1s; width: 30px; height: 30px; }
+  .square:nth-child(3) { left: 30%; animation-duration: 10s; animation-delay: 2s; }
+  .square:nth-child(4) { left: 40%; animation-duration: 18s; animation-delay: 0.5s; width: 50px; height: 50px; }
+  .square:nth-child(5) { left: 50%; animation-duration: 13s; animation-delay: 3s; width: 20px; height: 20px; }
+  .square:nth-child(6) { left: 60%; animation-duration: 16s; animation-delay: 1.5s; width: 100px; height: 100px; }
+  .square:nth-child(7) { left: 70%; animation-duration: 11s; animation-delay: 2.5s; }
+  .square:nth-child(8) { left: 80%; animation-duration: 14s; animation-delay: 0.2s; width: 60px; height: 60px; }
+  .square:nth-child(9) { left: 90%; animation-duration: 17s; animation-delay: 1.8s; width: 45px; height: 45px; }
+  .square:nth-child(10) { left: 5%; animation-duration: 12s; animation-delay: 2.2s; }
+
+  @keyframes flyUp {
     0% {
-      background-position: -1000px 0; /* Начальная позиция градиента за левым краем */
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+      border-radius: 0%;
     }
     100% {
-      background-position: 1000px 0;  /* Конечная позиция градиента за правым краем */
+      transform: translateY(-120vh) rotate(720deg);
+      opacity: 0;
+      border-radius: 50%;
     }
   }
+
+  /* Стили для лава-контейнера, если вы решите его использовать (требует доп. HTML) */
+  /*
+  .lava-container {
+    position: relative;
+    overflow: hidden;
+    filter: blur(10px) contrast(20); 
+    background: white; 
+  }
+  */
 }
