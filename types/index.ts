@@ -1,22 +1,28 @@
+// @/types/index.ts
+
+export interface ScreenshotType {
+  id: string;
+  url: string;
+  gameId: string;
+}
+
 export interface Game {
-  id: string; // Будет 'static-...' для статических или Prisma ID
+  id: string;
   title: string;
-  genre?: string; // string | undefined
-  platform?: string; // string | undefined
-  releaseDate?: string | null; // Prisma может хранить Date, API будет возвращать строку или null
-  developer?: string; // string | undefined
+  genre?: string;
+  platform?: string;
+  releaseDate?: string | null | Date;
+  developer?: string;
   description: string;
-  imageUrl?: string | null; // Используется для отображения, соответствует coverImageUrl из Prisma
-  price?: number | null;    // Prisma может хранить Float, API будет возвращать number или null
-  publisher?: string; // string | undefined
-  isStatic?: boolean; // Флаг для различения источника
-  // Поля, специфичные для Prisma (могут быть Date или string в зависимости от маппинга)
+  coverImageUrl?: string | null; // Основное поле для URL обложки, если оно из Prisma
+  imageUrl?: string | null;      // Альтернативное, если вы делаете маппинг в API
+  price?: number | null;
+  publisher?: string;
+  isStatic?: boolean;
   createdAt?: string | Date;
   updatedAt?: string | Date;
-  // После маппинга в API, это всегда будет string[]
-  screenshots?: string[];
-  // Поле из Prisma модели, которое маппится в imageUrl
-  coverImageUrl?: string | null; // Только для внутреннего использования Prisma-объектом до маппинга
+  screenshots?: ScreenshotType[];
+  isOwned?: boolean;
 }
 
 export const ROLES = {
